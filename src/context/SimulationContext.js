@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext } from "react";
 
-const SimulationContext = createContext();
+const SimulationContext = createContext(undefined, undefined);
 
 export const useSimulation = () => useContext(SimulationContext);
 

@@ -174,7 +174,7 @@ function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             <Button
-              onClick={() => navigate("/simulator")}
+              onClick={() => navigate("/api/simulator")}
               className="bg-accent-600 hover:bg-accent-700 text-white rounded-xl shadow-lg shadow-accent-600/20"
             >
               <Plus className="w-4 h-4 mr-2" />

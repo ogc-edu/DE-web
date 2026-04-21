@@ -249,7 +249,7 @@ const Simulator = () => {
 
       // Navigate to dashboard after successful submission
       setIsSimulating(true);
-      navigate("/", { state: { newSimulation: response.data } });
+      navigate("/api", { state: { newSimulation: response.data } });
     } catch (error) {
       console.error("Error creating simulation:", error);
       
@@ -678,7 +678,7 @@ const Simulator = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/api")}
                     disabled={isSubmitting}
                     className="rounded-xl px-6 py-3 text-base font-semibold"
                   >

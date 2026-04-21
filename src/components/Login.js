@@ -52,7 +52,7 @@ function Login() {
         sessionStorage.setItem("user", JSON.stringify(user));
       }
       setMessage("Login successful!");
-      setTimeout(() => navigate("/"), 1000);
+      setTimeout(() => navigate("/api"), 1000);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password");
     } finally {
@@ -143,7 +143,7 @@ function Login() {
                 </Label>
               </div>
               <Link
-                to="/forgot-password"
+                to="/api/forgot-password"
                 size="sm"
                 className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors"
               >
@@ -171,14 +171,14 @@ function Login() {
           <p className="text-gray-600 text-sm">
             Don't have an account?{" "}
             <Link
-              to="/register"
+              to="/api/register"
               className="text-accent-600 font-bold hover:text-accent-700 transition-colors"
             >
               Join our research community
             </Link>
           </p>
           <Link
-            to="/"
+            to="/api"
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

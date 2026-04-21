@@ -43,11 +43,11 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-    { icon: PlayCircle, label: "Simulator", href: "/simulator" },
-    { icon: Database, label: "Simulation History", href: "/data" },
-    { icon: User, label: "Portfolio", href: "/portfolio" },
-    { icon: Settings, label: "Account Settings", href: "/settings" },
+    { icon: LayoutDashboard, label: "Dashboard", href: "/api" },
+    { icon: PlayCircle, label: "Simulator", href: "/api/simulator" },
+    { icon: Database, label: "Simulation History", href: "/api/data" },
+    { icon: User, label: "Portfolio", href: "/api/portfolio" },
+    { icon: Settings, label: "Account Settings", href: "/api/settings" },
   ];
 
   return (

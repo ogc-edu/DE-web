@@ -55,7 +55,7 @@ function Register() {
       // Simulation of registration
       console.log("Registering user:", formData);
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      navigate("/login");
+      navigate("/api/login");
     } catch (err) {
       setError("Registration failed. Please try again.");
     } finally {
@@ -175,14 +175,14 @@ function Register() {
           <p className="text-gray-600 text-sm">
             Already have an account?{" "}
             <Link
-              to="/login"
+              to="/api/login"
               className="text-accent-600 font-bold hover:text-accent-700 transition-colors"
             >
               Sign In
             </Link>
           </p>
           <Link
-            to="/"
+            to="/api"
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

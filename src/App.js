@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Simulator from "./components/Simulator";
+import Portfolio from "./components/Portfolio";
 import "./App.css";
 
 function App() {
@@ -14,15 +15,17 @@ function App() {
       <SimulationProvider>
         <Router>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/simulator" element={<Simulator />} />
+            <Route path="/api" element={<Dashboard />} />
+            <Route path="/api/login" element={<Login />} />
+            <Route path="/api/register" element={<Register />} />
+            <Route path="/api/simulator" element={<Simulator />} />
+            <Route path="/api/portfolio" element={<Portfolio />} />
           </Routes>
         </Router>
       </SimulationProvider>
     </AuthProvider>
   );
 }
+
 
 export default App;

@@ -9,16 +9,36 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    // if (token) {
-    //   // In a real app, you would verify the token with the backend
-    //   // and get the user profile. For now, we'll just set a mock user.
-    //   setUser({ id: "1", name: "Researcher", email: "researcher@example.com" });
-    // }
-    //mock user without token
-    setUser({ id: "1", name: "Researcher", email: "researcher@example.com" });
-    setLoading(false);
+  useEffect(() => { //useEffect cannot run async await, define and implement a function inside useEffect
+    const verifyToken = async () => {
+      const token = localStorage.getItem("token");
+
+      if(!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await authService.verifyToken(); //verify token with backend
+        
+        if(response.data && response.status === 200) {
+          const { userData } = response.data;
+          setUser({
+            ...userData, 
+            id: userData._id,
+          });
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error verifying token:", error);
+        setUser(null);
+        setLoading(false);
+        localStorage.removeItem("token");
+      }
+    };
+
+    verifyToken();
   }, []);
 
   const login = async (credentials) => {
