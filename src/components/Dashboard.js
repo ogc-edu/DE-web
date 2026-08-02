@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import FitnessChart from "./FitnessChart";
 import CrossoverNavigation from "./CrossoverNavigation";
-import { mockSimulations, benchmarkFunctions } from "../data/mockData";
+import { benchmarkFunctions } from "../data/mockData";
 import {
   getFunctionNames,
   getFunctionDataByCrossoverAndSelection,
 } from "../data/fitnessData";
+import { useSimulation } from "../context/SimulationContext";
 import {
   Search,
   ArrowUpDown,
@@ -18,6 +19,7 @@ import {
   BarChart3,
   List,
   Filter,
+  Loader2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -39,9 +41,6 @@ import {
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import {
@@ -52,8 +51,9 @@ import {
 } from "./ui/dropdown-menu";
 
 function Dashboard() {
-  const navigate = useNavigate(); //hook from react router modify url by JS, instead of requiring user to manually click link
-  const [simulations, setSimulations] = useState(mockSimulations);  //mock data only 
+  const navigate = useNavigate();
+  const { simulations, loading, fetchSimulations, deleteSimulation } = useSimulation();
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterBenchmark, setFilterBenchmark] = useState("all");
   const [sortConfig, setSortConfig] = useState({
     key: "timestamp",
@@ -61,12 +61,15 @@ function Dashboard() {
   });
   const [viewMode, setViewMode] = useState("table");
 
-  // Analytics state
   const [activeCrossover, setActiveCrossover] = useState("exponential");
   const [showSTS, setShowSTS] = useState(true);
   const [showGreedy, setShowGreedy] = useState(true);
   const [chartType, setChartType] = useState("bar");
   const functionNames = getFunctionNames();
+
+  useEffect(() => {
+    fetchSimulations();
+  }, [fetchSimulations]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -78,6 +81,16 @@ function Dashboard() {
 
   const filteredAndSortedSimulations = useMemo(() => {
     let result = [...simulations];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (sim) =>
+          sim.model?.toLowerCase().includes(query) ||
+          sim.benchmark?.toLowerCase().includes(query) ||
+          sim.status?.toLowerCase().includes(query)
+      );
+    }
 
     if (filterBenchmark !== "all") {
       result = result.filter((sim) => sim.benchmark === filterBenchmark);
@@ -97,7 +110,7 @@ function Dashboard() {
     });
 
     return result;
-  }, [simulations, filterBenchmark, sortConfig]);
+  }, [simulations, searchQuery, filterBenchmark, sortConfig]);
 
   const analyticsData = useMemo(() => {
     const filteredData = {};
@@ -152,11 +165,11 @@ function Dashboard() {
     return filteredData;
   }, [activeCrossover, showSTS, showGreedy, functionNames]);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (
       window.confirm("Are you sure you want to delete this simulation record?")
     ) {
-      setSimulations(simulations.filter((sim) => sim.id !== id));
+      await deleteSimulation(id);
     }
   };
 
@@ -193,10 +206,16 @@ function Dashboard() {
             },
             {
               label: "Avg. Best Fitness",
-              value: "1.42e-12",
+              value: simulations.length > 0
+                ? (simulations.reduce((sum, sim) => sum + (sim.bestFitness || 0), 0) / simulations.length).toExponential(2)
+                : "N/A",
               color: "bg-emerald-500",
             },
-            { label: "Active Jobs", value: "0", color: "bg-amber-500" },
+            {
+              label: "Active Jobs",
+              value: simulations.filter((sim) => sim.status === "running" || sim.status === "pending").length,
+              color: "bg-amber-500",
+            },
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-sm">
               <CardContent className="flex items-center gap-4 p-6">
@@ -224,6 +243,8 @@ function Dashboard() {
               <Input
                 placeholder="Search simulations..."
                 className="pl-10 bg-neutral-50 border-none rounded-xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Select value={filterBenchmark} onValueChange={setFilterBenchmark}>
@@ -266,7 +287,12 @@ function Dashboard() {
         </div>
 
         {/* Data Table / Analytics View */}
-        {viewMode === "table" ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-accent-600" />
+            <span className="ml-3 text-muted-foreground">Loading simulations...</span>
+          </div>
+        ) : viewMode === "table" ? (
           <Card className="border-none shadow-sm overflow-hidden">
             <Table>
               <TableHeader className="bg-neutral-50">

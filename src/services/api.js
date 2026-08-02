@@ -17,7 +17,7 @@ const api = axios.create({
 // Add interceptor for auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,7 +37,7 @@ export const simulationService = {
   getAll: () => api.get("/api/simulations"),
   getById: (id) => api.get(`/api/simulations/${id}`),
   create: (data) => api.post("/api/simulations", data),
-  delete: (id) => api.get(`/api/simulations/${id}`),
+  delete: (id) => api.delete(`/api/simulations/${id}`),
 };
 
 export default api;

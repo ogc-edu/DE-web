@@ -9,9 +9,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { //useEffect cannot run async await, define and implement a function inside useEffect
+  useEffect(() => {
     const verifyToken = async () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
       if(!token) {
         setUser(null);
@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setLoading(false);
         localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
       }
     };
 
@@ -43,14 +44,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const response = await authService.login(credentials);
-    const { token, user } = response.data;
-    localStorage.setItem("token", token);
+    const { user } = response.data;
     setUser(user);
     return response.data;
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     setUser(null);
   };
 

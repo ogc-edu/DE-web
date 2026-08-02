@@ -20,7 +20,9 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          900: "#0f172a", // Preserving your slate-900
+          200: "#cbd5e1",
+          800: "#1e293b",
+          900: "#0f172a",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -37,7 +39,13 @@ module.exports = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          600: "#2563eb", // Preserving your blue-600
+          50: "#eff6ff",
+          100: "#dbeafe",
+          200: "#bfdbfe",
+          400: "#60a5fa",
+          600: "#2563eb",
+          700: "#1d4ed8",
+          900: "#1e3a8a",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",

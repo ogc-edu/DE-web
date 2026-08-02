@@ -14,7 +14,6 @@ import {
 import { Bar, Line } from "react-chartjs-2";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
-import { crossoverMethods } from "../data/fitnessData";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 ChartJS.register(

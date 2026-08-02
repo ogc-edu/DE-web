@@ -7,6 +7,8 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Simulator from "./components/Simulator";
 import Portfolio from "./components/Portfolio";
+import SimulationHistory from "./components/SimulationHistory";
+import AccountSettings from "./components/AccountSettings";
 import "./App.css";
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
             <Route path="/api/register" element={<Register />} />
             <Route path="/api/simulator" element={<Simulator />} />
             <Route path="/api/portfolio" element={<Portfolio />} />
+            <Route path="/api/data" element={<SimulationHistory />} />
+            <Route path="/api/settings" element={<AccountSettings />} />
           </Routes>
         </Router>
       </SimulationProvider>

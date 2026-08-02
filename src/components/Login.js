@@ -10,7 +10,6 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  CardAction,
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -22,7 +21,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const { login } = useAuth();
-  const {remember, setRemember} = useState(false);
+  const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
 
   const handleRemember = () => {
@@ -42,8 +41,8 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await login({ email, password });
-      const { token, user } = response.data;
+      const data = await login({ email, password });
+      const { token, user } = data;
       if (remember) {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
@@ -54,7 +53,7 @@ function Login() {
       setMessage("Login successful!");
       setTimeout(() => navigate("/api"), 1000);
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid email or password");
+      setError(err.response?.data?.message || err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }

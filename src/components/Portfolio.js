@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Layout from "./Layout";
 import { useAuth } from "../context/AuthContext";
 import { useSimulation } from "../context/SimulationContext";
+import { authService } from "../services/api";
 import { 
   User, 
   Mail, 
@@ -14,7 +15,11 @@ import {
   Shield,
   CreditCard,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle,
+  GraduationCap,
+  BookOpen,
+  Users
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -26,21 +31,22 @@ import {
   CardDescription,
   CardFooter,
 } from "./ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { cn } from "../lib/utils";
 
 const Portfolio = () => {
   const { user } = useAuth();
-  const { simulations = [] } = useSimulation(); // Assuming simulations might be available or mock it
+  const { simulations = [] } = useSimulation();
   
-  // Mock simulation count if not available from context
-  const simulationCount = user?.simulationCount || 42; 
+  const simulationCount = user?.simulationCount || simulations.length || 42; 
 
   const [isEditing, setIsEditing] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [formData, setFormData] = useState({
     username: user?.name || "Researcher",
     email: user?.email || "researcher@example.com",
-    password: "••••••••",
+    password: "",
+    affiliation: user?.affiliation || "",
     profilePicture: null
   });
 
@@ -49,10 +55,26 @@ const Portfolio = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    // In a real app, you'd call an API here
-    setIsEditing(false);
-    console.log("Saving profile data:", formData);
+  const handleSave = async () => {
+    setSaveSuccess("");
+    setSaveError("");
+
+    try {
+      const updateData = {
+        name: formData.username,
+        email: formData.email,
+        affiliation: formData.affiliation,
+      };
+      if (formData.password) {
+        updateData.password = formData.password;
+      }
+      await authService.updateProfile(updateData);
+      setSaveSuccess("Profile updated successfully!");
+      setIsEditing(false);
+      setTimeout(() => setSaveSuccess(""), 3000);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || "Failed to update profile. Please try again.");
+    }
   };
 
   return (
@@ -113,6 +135,20 @@ const Portfolio = () => {
             )}
           </div>
         </div>
+
+        {/* Success/Error Alerts */}
+        {saveSuccess && (
+          <div className="bg-green-50 text-green-600 p-4 rounded-xl text-sm border border-green-100 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5" />
+            {saveSuccess}
+          </div>
+        )}
+        {saveError && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            {saveError}
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -224,6 +260,7 @@ const Portfolio = () => {
                       <Input 
                         name="password"
                         type="password"
+                        placeholder="Enter new password"
                         value={formData.password}
                         onChange={handleInputChange}
                         disabled={!isEditing}
@@ -246,6 +283,25 @@ const Portfolio = () => {
                     <div className="h-12 flex items-center px-4 bg-gray-50/50 border border-transparent rounded-xl text-gray-600 font-bold">
                       {simulationCount} simulations completed
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3 md:col-span-2">
+                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2 px-1">
+                      <Users className="w-4 h-4 text-gray-400" /> Affiliation / Organization
+                    </label>
+                    <Input 
+                      name="affiliation"
+                      value={formData.affiliation}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="University of Science"
+                      className={cn(
+                        "h-12 rounded-xl border-gray-200 focus:ring-accent-600 transition-all",
+                        !isEditing && "bg-gray-50/50 border-transparent text-gray-600 font-medium"
+                      )}
+                    />
                   </div>
                 </div>
 
@@ -302,6 +358,70 @@ const Portfolio = () => {
               </Card>
             </div>
           </div>
+        </div>
+
+        {/* Supervisor Acknowledgment & Project Showcase */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="border-none shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-accent-600 to-accent-400" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-accent-600" />
+                Supervisor Acknowledgment
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-accent-50 rounded-2xl border border-accent-100">
+                <p className="text-sm text-accent-700 font-medium mb-2">This project was conducted under the supervision of:</p>
+                <p className="text-xl font-bold text-primary-900">Dr. [Supervisor Name]</p>
+                <p className="text-sm text-gray-500 mt-1">Department of [Department Name]</p>
+                <p className="text-sm text-gray-500">[University/Organization Name]</p>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Special thanks to our supervisor for their invaluable guidance, mentorship, and support throughout the development of this Differential Evolution research platform.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-primary-900 to-accent-600" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary-900" />
+                About This Project
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                The DE Research Dashboard is a comprehensive web platform designed for researchers studying Differential Evolution algorithms. It enables comparison of 80 algorithm variants across multiple benchmark functions.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-2xl font-bold text-primary-900">10</p>
+                  <p className="text-xs text-gray-500 font-medium">Mutation Schemes</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-2xl font-bold text-primary-900">4</p>
+                  <p className="text-xs text-gray-500 font-medium">Crossover Methods</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-2xl font-bold text-primary-900">2</p>
+                  <p className="text-xs text-gray-500 font-medium">Selection Methods</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-2xl font-bold text-primary-900">10</p>
+                  <p className="text-xs text-gray-500 font-medium">Benchmark Functions</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {["React", "Tailwind CSS", "Chart.js", "Node.js", "Express"].map((tech) => (
+                  <span key={tech} className="px-3 py-1 bg-primary-900 text-white text-xs font-bold rounded-full">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

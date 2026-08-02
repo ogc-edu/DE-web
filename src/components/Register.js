@@ -19,6 +19,7 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { authService } from "../services/api";
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -28,6 +29,7 @@ function Register() {
     affiliation: "",
   });
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -38,6 +40,7 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setMessage("");
 
     if (
       !formData.name ||
@@ -52,12 +55,11 @@ function Register() {
     setLoading(true);
 
     try {
-      // Simulation of registration
-      console.log("Registering user:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      navigate("/api/login");
+      await authService.register(formData);
+      setMessage("Registration successful! Redirecting to login...");
+      setTimeout(() => navigate("/api/login"), 1500);
     } catch (err) {
-      setError("Registration failed. Please try again.");
+      setError(err.response?.data?.message || err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -82,6 +84,11 @@ function Register() {
             {error && (
               <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm border border-destructive/20">
                 {error}
+              </div>
+            )}
+            {message && (
+              <div className="bg-green-50 text-green-600 p-4 rounded-xl text-sm border border-green-100">
+                {message}
               </div>
             )}
 
