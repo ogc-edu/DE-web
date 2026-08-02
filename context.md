@@ -1,0 +1,108 @@
+# DE Research Dashboard — Frontend Context
+
+> Purpose-built context for this repository. Verified against the code as of commit `c671eef` (main branch).
+
+## What this project is
+
+A React SPA (Create React App, no SSR) for **Differential Evolution (DE) research**: configure DE algorithm variants, submit simulations to a separate backend, and visualize results (tables + Chart.js fitness charts). It compares **80 algorithm variants** (10 mutation schemes × 4 crossover operators × 2 selection methods: STS / Greedy) across benchmark functions.
+
+- Frontend repo only — **backend is a separate project** (API contract below). Without the backend running, the app falls back to mock data (`src/data/mockData.js`).
+- Deployed as static files on AWS S3: `http://de-website-frontend-deploy.s3-website-us-east-1.amazonaws.com/`
+
+## Stack (from package.json, verified)
+
+| Layer | Choice |
+|---|---|
+| Framework | React 19 via `react-scripts` 5.0.1 (CRA, deprecated but no migration planned) |
+| Routing | React Router 7 — `BrowserRouter`, all routes under `/api/*` prefix |
+| HTTP | Axios 1.x — single instance, Bearer-token request interceptor |
+| State | React Context only — `AuthContext`, `SimulationContext` (no Redux/Zustand) |
+| Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives, `.jsx` files) |
+| Charts | Chart.js 4 + react-chartjs-2 (Bar/Line) |
+| Math | KaTeX via react-katex (fitness function formulas) |
+| Icons | lucide-react |
+| Tests | Jest + React Testing Library (`npm test`) |
+
+Unused deps currently in `package.json` (zero references in `src/`): `socket.io-client`, `date-fns`, `react-day-picker`, `react-katex` is used.
+
+## Layout
+
+```
+public/                  static assets (favicon, manifest, logos — CRA boilerplate)
+src/
+  App.js                 route table (7 routes under /api/*)
+  index.js               CRA entry, <React.StrictMode>
+  index.css              Tailwind + CSS variables (light + .dark theme)
+  App.css                CRA leftover, tiny
+  components/            page components (PascalCase.js) + Layout
+    ui/                  shadcn primitives (PascalCase.jsx): button, card, dialog,
+                         dropdown-menu, input, label, select, table, tabs
+  context/               AuthContext, SimulationContext (+ __tests__)
+  data/                  mockData.js, fitnessData.js (+ __tests__)
+  lib/                   utils.js — cn() (clsx + tailwind-merge)
+  services/              api.js — axios instance + authService + simulationService
+  __mocks__/             react-router-dom mock for Jest
+```
+
+## Routes (src/App.js)
+
+| Route | Component | Purpose |
+|---|---|---|
+| `/api` | Dashboard | Simulations table + Analytics (fitness charts) |
+| `/api/login` | Login | Sign in (email/password, remember-me → localStorage vs sessionStorage) |
+| `/api/register` | Register | Create account (name/email/password/affiliation) |
+| `/api/simulator` | Simulator | Configure & submit DE simulations (parameters + variant selection) |
+| `/api/data` | SimulationHistory | Full history table w/ status badges, filters |
+| `/api/portfolio` | Portfolio | Student/supervisor showcase + profile editor |
+| `/api/settings` | AccountSettings | Profile edit, change password, sign out |
+
+Auth is **not** enforced client-side (no route guard); enforcement is server-side.
+
+## Data & state flow
+
+- **AuthContext** — `user`, `login`, `logout`, `loading`. On mount, verifies stored token via `POST /api/auth/verify`; stores `userData` (renames `_id` → `id`). Token persistence is done by Login.js (`localStorage`/`sessionStorage`), read by the axios interceptor.
+- **SimulationContext** — `simulations`, `loading`, `error`, `activeSimulation`, `isSimulating`; actions: `fetchSimulations`, `deleteSimulation`, `addSimulation`. On API failure, **silently falls back to `mockSimulations`** (hides real backend errors).
+- **api.js** — `API_BASE_URL` from `REACT_APP_API_URL` (full URL wins) else `{REACT_APP_BACKEND_PROTOCOL}://{REACT_APP_BACKEND_HOST}:{REACT_APP_BACKEND_PORT}` (defaults `http://localhost:3000`). `.env` at repo root (git-tracked — see hygiene note).
+- **fitnessData.js** (120 KB) — pre-computed `avgLowestFitness` per (crossover × selection × function × model). All 4 crossovers (exponential, binomial, onepoint, twopoint) × both selections (sts, greedy) are populated. Functions are named like `axisParallelHyperEllipsoid` → display name "Axis Parallel Hyper Ellipsoid Function" with a KaTeX description.
+- **mockData.js** — 80 fake simulation records + `deVariants` + 8 `benchmarkFunctions` names.
+
+## API contract (backend not in this repo)
+
+- `POST /api/login`, `POST /api/register`, `POST /api/auth/verify`, `PUT /api/user/profile`
+- `GET /api/simulations`, `GET /api/simulations/:id`, `POST /api/simulations`, `DELETE /api/simulations/:id`
+- Simulation record shape (from mockData + table renders): `id, model, benchmark, np, f, cr, generations, bestFitness, timestamp, status (completed|running|pending|failed)`, optionally `dimension`.
+
+## Conventions
+
+- Page components: default-exported PascalCase `.js` (`export default function Dashboard`).
+- shadcn primitives: named-exported PascalCase `.jsx` (`export { Button }`).
+- Contexts: `createContext` → `export const useX = () => useContext(X)` + `export const XProvider`.
+- Services: named-exported objects (`authService.login`, `simulationService.getAll`).
+- `@/` alias → `src/` (jsconfig.json) available but relative imports are the convention.
+- Colors: Tailwind `primary-900` (#0f172a), `accent-600` (#2563eb), `neutral-50` background — defined in `tailwind.config.js` + CSS vars in `index.css`.
+- ESLint: react-app preset (`npm run build` runs lint as part of CRA).
+
+## Commands
+
+```bash
+npm start        # dev server on PORT 5000 (CRA default 3000 is overridden)
+npm run build    # production build → build/
+npm test         # Jest + RTL (react-scripts test)
+```
+
+Note: `node`/`npm` are not installed in the Reasonix sandbox environment, so builds/tests can't be executed here — verify locally.
+
+## Known issues / gaps (as of this audit)
+
+1. **Simulator.js was corrupted** — commit `c671eef` ("2/8 After agenting") committed a 38,805-byte all-NUL file. **Fixed**: restored from `5bc3154` (still uncommitted — must be included in next commit).
+2. **`.env` and `.idea/` are git-tracked** — should be untracked + gitignored (hygiene, see below).
+3. **`/api/forgot-password` link** in Login.js has no matching route → 404.
+4. **Dead UI**: Dashboard table `ExternalLink`/`Download` buttons have no handlers; Portfolio "Enable 2FA", "View Alerts", "Update Avatar", camera/pen icons are non-functional.
+5. **Portfolio is placeholder-heavy**: supervisor shows "Dr. [Supervisor Name]" (PRD wants "Ts Dr. Lim Seng Poh"); hardcoded stats (Rank #12, Impact High, Premium Researcher, "3 new simulation results", "Last updated: April 13, 2026").
+6. **Benchmark-name mismatch**: table filter uses `mockData.benchmarkFunctions` (8 names, e.g. "Sphere Function") while analytics charts use `fitnessData` names (10, e.g. "Axis Parallel Hyper Ellipsoid Function") — filter options won't match real simulation records.
+7. **`/api/data` (SimulationHistory) duplicates** the Dashboard table view; Dashboard's unique value is the Analytics chart view.
+8. **Mock fallback hides errors**: `fetchSimulations` swaps in mock data on any API failure — masks broken backend.
+9. **Unused files/deps**: `src/logo.svg`, `src/components/Login.css`, `src/App.css` are unreferenced; `socket.io-client`, `date-fns`, `react-day-picker` unused.
+10. **No 404 catch-all route** — unknown `/api/*` URLs render a blank page; no error boundary.
+11. **No component tests** — only contexts/services/data utils have tests; no Dashboard/Simulator/Portfolio render tests.
+12. **No real-time updates** — simulation status only refreshes on manual `fetchSimulations`; `socket.io-client` is present but unused.
