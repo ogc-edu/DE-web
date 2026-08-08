@@ -1,6 +1,6 @@
 # DE Research Dashboard — Frontend Context
 
-> Purpose-built context for this repository. Verified against the code as of commit `c671eef` (main branch).
+> Purpose-built context for this repository. Verified against the code as of commit `1fc981a` (main branch, working tree clean).
 
 ## What this project is
 
@@ -90,19 +90,19 @@ npm run build    # production build → build/
 npm test         # Jest + RTL (react-scripts test)
 ```
 
-Note: `node`/`npm` are not installed in the Reasonix sandbox environment, so builds/tests can't be executed here — verify locally.
+Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test` / `npm run build` can be run locally.
 
 ## Known issues / gaps (as of this audit)
 
-1. **Simulator.js was corrupted** — commit `c671eef` ("2/8 After agenting") committed a 38,805-byte all-NUL file. **Fixed**: restored from `5bc3154` (still uncommitted — must be included in next commit).
-2. **`.env` and `.idea/` are git-tracked** — should be untracked + gitignored (hygiene, see below).
+1. ✅ **RESOLVED — Simulator.js corruption**: commit `c671eef` ("2/8 After agenting") committed a 38,805-byte all-NUL file. **Fixed in `1fc981a`** (restored valid 37,944-byte source).
+2. ✅ **RESOLVED — repo hygiene**: `.env` and `.idea/` untracked + gitignored in `1fc981a`; `npm start` made cross-platform (`PORT=5000 react-scripts start`, was Windows-only `set PORT=5000`).
 3. **`/api/forgot-password` link** in Login.js has no matching route → 404.
 4. **Dead UI**: Dashboard table `ExternalLink`/`Download` buttons have no handlers; Portfolio "Enable 2FA", "View Alerts", "Update Avatar", camera/pen icons are non-functional.
 5. **Portfolio is placeholder-heavy**: supervisor shows "Dr. [Supervisor Name]" (PRD wants "Ts Dr. Lim Seng Poh"); hardcoded stats (Rank #12, Impact High, Premium Researcher, "3 new simulation results", "Last updated: April 13, 2026").
 6. **Benchmark-name mismatch**: table filter uses `mockData.benchmarkFunctions` (8 names, e.g. "Sphere Function") while analytics charts use `fitnessData` names (10, e.g. "Axis Parallel Hyper Ellipsoid Function") — filter options won't match real simulation records.
 7. **`/api/data` (SimulationHistory) duplicates** the Dashboard table view; Dashboard's unique value is the Analytics chart view.
 8. **Mock fallback hides errors**: `fetchSimulations` swaps in mock data on any API failure — masks broken backend.
-9. **Unused files/deps**: `src/logo.svg`, `src/components/Login.css`, `src/App.css` are unreferenced; `socket.io-client`, `date-fns`, `react-day-picker` unused.
+9. **Unused files/deps**: `src/logo.svg` and `src/components/Login.css` are unreferenced (note: `src/App.css` **is** imported by `src/App.js:12`); `socket.io-client`, `date-fns`, `react-day-picker` still in `package.json` and unused (only `react-katex` is used, in FitnessChart.js).
 10. **No 404 catch-all route** — unknown `/api/*` URLs render a blank page; no error boundary.
 11. **No component tests** — only contexts/services/data utils have tests; no Dashboard/Simulator/Portfolio render tests.
 12. **No real-time updates** — simulation status only refreshes on manual `fetchSimulations`; `socket.io-client` is present but unused.
