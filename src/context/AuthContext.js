@@ -25,8 +25,9 @@ export const AuthProvider = ({ children }) => {
         if(response.data && response.status === 200) {
           const { userData } = response.data;
           setUser({
-            ...userData, 
-            id: userData._id,
+            ...userData,
+            id: userData.userId,
+            name: userData.username,
           });
         }
         setLoading(false);
@@ -44,9 +45,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const response = await authService.login(credentials);
-    const { user } = response.data;
-    setUser(user);
-    return response.data;
+    const { token } = response.data;
+    // Backend login returns only the token; fetch the full profile for user state
+    const profileResponse = await authService.getProfile();
+    const { user } = profileResponse.data;
+    const normalizedUser = { ...user, id: user._id, name: user.name ?? user.username };
+    setUser(normalizedUser);
+    return { token, user: normalizedUser };
   };
 
   const logout = () => {

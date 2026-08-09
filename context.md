@@ -66,11 +66,15 @@ Auth is **not** enforced client-side (no route guard); enforcement is server-sid
 - **fitnessData.js** (120 KB) — pre-computed `avgLowestFitness` per (crossover × selection × function × model). All 4 crossovers (exponential, binomial, onepoint, twopoint) × both selections (sts, greedy) are populated. Functions are named like `axisParallelHyperEllipsoid` → display name "Axis Parallel Hyper Ellipsoid Function" with a KaTeX description.
 - **mockData.js** — 80 fake simulation records + `deVariants` + 8 `benchmarkFunctions` names.
 
-## API contract (backend not in this repo)
+## API contract (backend: `DE-website-backend`, mounted at `/api/v1`)
 
-- `POST /api/login`, `POST /api/register`, `POST /api/auth/verify`, `PUT /api/user/profile`
-- `GET /api/simulations`, `GET /api/simulations/:id`, `POST /api/simulations`, `DELETE /api/simulations/:id`
-- Simulation record shape (from mockData + table renders): `id, model, benchmark, np, f, cr, generations, bestFitness, timestamp, status (completed|running|pending|failed)`, optionally `dimension`.
+- `POST /api/v1/login` → `{ message, token }` (full user fetched via profile)
+- `POST /api/v1/register` → body `{ username, email, password }` (no affiliation field)
+- `POST /api/v1/verify` → `{ status, userData: { userId, username } }`
+- `GET /api/v1/user/profile` → `{ user }`; `PATCH /api/v1/user/profile` → `{ username, email }`; `PATCH /api/v1/user/password` → `{ currentPassword, newPassword }`
+- `GET /api/v1/simulation/get` → `{ simulations, simulationCount }`; `GET /api/v1/simulation/get/:id`; `POST /api/v1/simulation/create` → body `{ functions: [int], methods: { mutation, crossover, selection } }`; `DELETE /api/v1/simulation/delete/:id`
+- Backend Simulation record: `_id, functions[1-10], methods{mutation[1-10], crossover[1-4], selection[1-2]}, totalModels, completedModels, progress, status (pending|completed|failed|cancelled), simulationData[], createdAt`
+- The UI keeps mock-style display records (`id, model, benchmark, np, f, cr, generations, bestFitness, timestamp, status`) via `simulationToDisplay()` in `src/data/variantMappings.js`; `np/f/cr/generations/dimension` are UI-only (not stored by the backend).
 
 ## Conventions
 
@@ -85,7 +89,7 @@ Auth is **not** enforced client-side (no route guard); enforcement is server-sid
 ## Commands
 
 ```bash
-npm start        # dev server on PORT 5000 (CRA default 3000 is overridden)
+npm start        # dev server on PORT 3001 (CRA default 3000 is overridden)
 npm run build    # production build → build/
 npm test         # Jest + RTL (react-scripts test)
 ```
@@ -95,7 +99,7 @@ Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test`
 ## Known issues / gaps (as of this audit)
 
 1. ✅ **RESOLVED — Simulator.js corruption**: commit `c671eef` ("2/8 After agenting") committed a 38,805-byte all-NUL file. **Fixed in `1fc981a`** (restored valid 37,944-byte source).
-2. ✅ **RESOLVED — repo hygiene**: `.env` and `.idea/` untracked + gitignored in `1fc981a`; `npm start` made cross-platform (`PORT=5000 react-scripts start`, was Windows-only `set PORT=5000`).
+2. ✅ **RESOLVED — repo hygiene**: `.env` and `.idea/` untracked + gitignored in `1fc981a`; `npm start` made cross-platform (`PORT=3001 react-scripts start`, was Windows-only `set PORT=5000`).
 3. **`/api/forgot-password` link** in Login.js has no matching route → 404.
 4. **Dead UI**: Dashboard table `ExternalLink`/`Download` buttons have no handlers; Portfolio "Enable 2FA", "View Alerts", "Update Avatar", camera/pen icons are non-functional.
 5. **Portfolio is placeholder-heavy**: supervisor shows "Dr. [Supervisor Name]" (PRD wants "Ts Dr. Lim Seng Poh"); hardcoded stats (Rank #12, Impact High, Premium Researcher, "3 new simulation results", "Last updated: April 13, 2026").
@@ -106,3 +110,4 @@ Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test`
 10. **No 404 catch-all route** — unknown `/api/*` URLs render a blank page; no error boundary.
 11. **No component tests** — only contexts/services/data utils have tests; no Dashboard/Simulator/Portfolio render tests.
 12. **No real-time updates** — simulation status only refreshes on manual `fetchSimulations`; `socket.io-client` is present but unused.
+13. ✅ **RESOLVED — frontend↔backend integration**: `src/services/api.js` now targets the real `/api/v1` endpoints (was unversioned `/api/*` that 404'd); register sends `{username,email,password}`, login fetches the profile for user state, simulation list is unwrapped + normalized via `variantMappings.js`, Simulator submits integer IDs, and `bestFitness`/`np/f/cr` render guards added. Port fixed to 3001 (5000 was owned by macOS AirTunes).

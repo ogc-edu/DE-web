@@ -7,6 +7,7 @@ jest.mock("../../services/api", () => ({
   authService: {
     login: jest.fn(),
     verifyToken: jest.fn(),
+    getProfile: jest.fn(),
   },
 }));
 
@@ -46,8 +47,9 @@ describe("AuthContext", () => {
   test("login sets user state", async () => {
     const mockUser = { name: "Test User", email: "test@test.com" };
     authService.login.mockResolvedValue({
-      data: { token: "test-token", user: mockUser },
+      data: { token: "test-token" },
     });
+    authService.getProfile.mockResolvedValue({ data: { user: mockUser } });
 
     await act(async () => {
       render(
@@ -67,8 +69,9 @@ describe("AuthContext", () => {
   test("logout clears user state", async () => {
     const mockUser = { name: "Test User", email: "test@test.com" };
     authService.login.mockResolvedValue({
-      data: { token: "test-token", user: mockUser },
+      data: { token: "test-token" },
     });
+    authService.getProfile.mockResolvedValue({ data: { user: mockUser } });
 
     await act(async () => {
       render(

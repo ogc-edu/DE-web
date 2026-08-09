@@ -55,7 +55,11 @@ function Register() {
     setLoading(true);
 
     try {
-      await authService.register(formData);
+      await authService.register({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
       setMessage("Registration successful! Redirecting to login...");
       setTimeout(() => navigate("/api/login"), 1500);
     } catch (err) {

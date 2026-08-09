@@ -56,7 +56,10 @@ const AccountSettings = () => {
     setProfileSaving(true);
 
     try {
-      await authService.updateProfile(profileData);
+      await authService.updateProfile({
+        username: profileData.name,
+        email: profileData.email,
+      });
       setProfileSuccess("Profile updated successfully!");
       setTimeout(() => setProfileSuccess(""), 3000);
     } catch (err) {
@@ -83,7 +86,10 @@ const AccountSettings = () => {
     setPasswordSaving(true);
 
     try {
-      await authService.updateProfile({ password: passwordData.newPassword });
+      await authService.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
       setPasswordSuccess("Password changed successfully!");
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setTimeout(() => setPasswordSuccess(""), 3000);

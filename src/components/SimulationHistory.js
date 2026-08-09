@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Layout from "./Layout";
-import { benchmarkFunctions } from "../data/mockData";
+import { functionIdToName } from "../data/variantMappings";
 import { useSimulation } from "../context/SimulationContext";
 import {
   Search,
@@ -147,7 +147,7 @@ const SimulationHistory = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Benchmarks</SelectItem>
-                {benchmarkFunctions.map((fn) => (
+                {functionIdToName.map((fn) => (
                   <SelectItem key={fn} value={fn}>{fn}</SelectItem>
                 ))}
               </SelectContent>
@@ -218,7 +218,7 @@ const SimulationHistory = () => {
                     <TableCell className="py-4">
                       <span className="font-semibold text-primary-900">{sim.model}</span>
                       <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
-                        NP:{sim.np} F:{sim.f} Cr:{sim.cr} Dim:{sim.dimension || sim.dim || "N/A"}
+                        NP:{sim.np ?? "N/A"} F:{sim.f ?? "N/A"} Cr:{sim.cr ?? "N/A"} Dim:{sim.dimension ?? sim.dim ?? "N/A"}
                       </div>
                     </TableCell>
                     <TableCell>

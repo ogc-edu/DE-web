@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useCallback } from "react";
 import { simulationService } from "../services/api";
 import { mockSimulations } from "../data/mockData";
+import { simulationToDisplay } from "../data/variantMappings";
 
 const SimulationContext = createContext(undefined, undefined);
 
@@ -18,7 +19,7 @@ export const SimulationProvider = ({ children }) => {
     setError(null);
     try {
       const response = await simulationService.getAll();
-      setSimulations(response.data);
+      setSimulations(response.data.map(simulationToDisplay));
     } catch (err) {
       console.error("Error fetching simulations:", err);
       setError(err.message);

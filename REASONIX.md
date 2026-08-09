@@ -17,7 +17,7 @@
 - `src/data/` — mockData.js, fitnessData.js (benchmark functions, crossover/selection methods)
 
 ## Commands
-- **dev**: `npm start` — runs on port 5000, not 3000
+- **dev**: `npm start` — runs on port 3001, not 3000
 - **build**: `npm run build` — react-scripts build
 - **test**: `npm test` — react-scripts test (Jest + React Testing Library)
 - **eject**: `npm run eject` (irreversible)

@@ -19,7 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import { benchmarkFunctions } from "../data/mockData";
+import {
+  functionIdToName,
+  functionNameToId,
+  mutationNameToId,
+  crossoverNameToId,
+  selectionNameToId,
+} from "../data/variantMappings";
 import { crossoverMethods, selectionMethods } from "../data/fitnessData";
 import { useSimulation } from "../context/SimulationContext";
 import { simulationService } from "../services/api";
@@ -233,16 +239,23 @@ const Simulator = () => {
     setIsSubmitting(true);
 
     try {
+      // Backend contract: integer IDs only. np/f/cr/generations/dimension are
+      // UI-only (backend schema has no fields for them).
       const simulationData = {
-        benchmarks: formData.benchmarks,
-        np: parseInt(formData.population),
-        f: parseFloat(formData.scalingFactor),
-        cr: parseFloat(formData.crossoverRate),
-        generations: parseInt(formData.generations),
-        dimension: parseInt(formData.dimension),
-        mutationSchemes: formData.mutationSchemes,
-        crossoverMethods: formData.crossoverMethods,
-        selectionMethods: formData.selectionMethods,
+        functions: formData.benchmarks
+          .map((name) => functionNameToId[name])
+          .filter((id) => id != null),
+        methods: {
+          mutation: formData.mutationSchemes
+            .map((name) => mutationNameToId[name])
+            .filter((id) => id != null),
+          crossover: formData.crossoverMethods
+            .map((name) => crossoverNameToId[name])
+            .filter((id) => id != null),
+          selection: formData.selectionMethods
+            .map((name) => selectionNameToId[name])
+            .filter((id) => id != null),
+        },
       };
 
       const response = await simulationService.create(simulationData);
@@ -603,7 +616,7 @@ const Simulator = () => {
                   {/* Benchmark Functions - Multiple Selection */}
                   <CheckboxGroup
                     label="Benchmark Functions"
-                    options={benchmarkFunctions}
+                    options={functionIdToName}
                     selectedValues={formData.benchmarks}
                     onChange={(value) =>
                       handleCheckboxChange("benchmarks", value)

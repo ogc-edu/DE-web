@@ -27,17 +27,23 @@ api.interceptors.request.use(
 );
 
 export const authService = {
-  login: (credentials) => api.post("/api/login", credentials),
-  register: (userData) => api.post("/api/register", userData),
-  verifyToken: () => api.post("/api/auth/verify"),
-  updateProfile: (userData) => api.put("/api/user/profile", userData),
+  login: (credentials) => api.post("/api/v1/login", credentials),
+  register: (userData) => api.post("/api/v1/register", userData),
+  verifyToken: () => api.post("/api/v1/verify"),
+  getProfile: () => api.get("/api/v1/user/profile"),
+  updateProfile: (userData) => api.patch("/api/v1/user/profile", userData),
+  changePassword: (data) => api.patch("/api/v1/user/password", data),
 };
 
 export const simulationService = {
-  getAll: () => api.get("/api/simulations"),
-  getById: (id) => api.get(`/api/simulations/${id}`),
-  create: (data) => api.post("/api/simulations", data),
-  delete: (id) => api.delete(`/api/simulations/${id}`),
+  getAll: async () => {
+    const response = await api.get("/api/v1/simulation/get");
+    // Backend wraps the list in { simulations, simulationCount }
+    return { ...response, data: response.data.simulations };
+  },
+  getById: (id) => api.get(`/api/v1/simulation/get/${id}`),
+  create: (data) => api.post("/api/v1/simulation/create", data),
+  delete: (id) => api.delete(`/api/v1/simulation/delete/${id}`),
 };
 
 export default api;
