@@ -91,9 +91,17 @@ const Layout = ({ children }) => {
         <div className="p-4 border-t border-white/10 space-y-2">
           {user && isSidebarOpen && (
             <div className="px-4 py-3 bg-white/5 rounded-xl mb-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center text-xs font-bold">
-                {user.name[0]}
-              </div>
+              {user.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center text-xs font-bold shrink-0">
+                  {user.name[0]}
+                </div>
+              )}
               <div className="overflow-hidden">
                 <p className="text-sm font-bold truncate">{user.name}</p>
                 <p className="text-xs text-gray-400 truncate">{user.email}</p>

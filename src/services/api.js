@@ -33,6 +33,26 @@ export const authService = {
   getProfile: () => api.get("/api/v1/user/profile"),
   updateProfile: (userData) => api.patch("/api/v1/user/profile", userData),
   changePassword: (data) => api.patch("/api/v1/user/password", data),
+  getPresignedUrl: (contentType) =>
+    api.get("/api/v1/user/profile/presign", { params: { contentType } }),
+  confirmProfilePicture: (versionId) =>
+    api.post("/api/v1/user/profile/picture", { versionId }),
+};
+
+// Upload the file directly to S3 using the presigned URL. Uses fetch instead of
+// the axios instance so the Authorization header (and JSON content type) are not
+// sent to S3 — the request must match the signature exactly.
+export const uploadToS3 = async (uploadUrl, file) => {
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!response.ok) {
+    throw new Error(`Upload to S3 failed (${response.status})`);
+  }
+  // Present only when bucket versioning is enabled.
+  return response.headers.get("x-amz-version-id");
 };
 
 export const simulationService = {

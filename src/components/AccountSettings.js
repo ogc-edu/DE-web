@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Layout from "./Layout";
 import { useAuth } from "../context/AuthContext";
-import { authService } from "../services/api";
+import { authService, uploadToS3 } from "../services/api";
 import {
   User,
   Mail,
@@ -14,6 +14,8 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  ImagePlus,
+  Camera,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -26,8 +28,26 @@ import {
   CardDescription,
 } from "./ui/card";
 
+const MIN_SAVE_DURATION_MS = 800;
+
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Resolves once the promise settles AND at least minMs have elapsed.
+// Ensures the loading state is visible for a minimum duration even on fast/error responses.
+const withMinDuration = async (promise, minMs) => {
+  const delay = wait(minMs);
+  try {
+    return await promise;
+  } finally {
+    await delay;
+  }
+};
+
 const AccountSettings = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
@@ -49,19 +69,81 @@ const AccountSettings = () => {
   const [profileError, setProfileError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const profileSuccessTimer = useRef(null);
+  const passwordSuccessTimer = useRef(null);
+  const avatarSuccessTimer = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarSuccess, setAvatarSuccess] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    // Reset the input so selecting the same file again still fires onChange
+    e.target.value = "";
+    if (!file) return;
+
+    setAvatarSuccess("");
+    setAvatarError("");
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("Please choose a JPEG, PNG, WebP, or GIF image.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      setAvatarError("Image must be 5 MB or smaller.");
+      return;
+    }
+
+    if (avatarSuccessTimer.current) {
+      clearTimeout(avatarSuccessTimer.current);
+      avatarSuccessTimer.current = null;
+    }
+
+    setAvatarUploading(true);
+    try {
+      await withMinDuration(
+        (async () => {
+          const { data } = await authService.getPresignedUrl(file.type);
+          const versionId = await uploadToS3(data.uploadUrl, file);
+          const confirmRes = await authService.confirmProfilePicture(versionId);
+          updateUser({ profilePicture: confirmRes.data.user.profilePicture });
+        })(),
+        MIN_SAVE_DURATION_MS
+      );
+      setAvatarSuccess("Profile photo updated successfully!");
+      avatarSuccessTimer.current = setTimeout(() => {
+        setAvatarSuccess("");
+        avatarSuccessTimer.current = null;
+      }, 3000);
+    } catch (err) {
+      setAvatarError(err.response?.data?.message || "Failed to upload profile photo.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleProfileSave = async () => {
+    // Disable button + show spinner immediately
+    setProfileSaving(true);
+    // Clear previous success timer so a stale timeout can't wipe the new message
+    if (profileSuccessTimer.current) {
+      clearTimeout(profileSuccessTimer.current);
+      profileSuccessTimer.current = null;
+    }
     setProfileSuccess("");
     setProfileError("");
-    setProfileSaving(true);
 
     try {
-      await authService.updateProfile({
-        username: profileData.name,
-        email: profileData.email,
-      });
+      const payload = { affiliation: profileData.affiliation };
+      // Only send required fields when non-empty; empty username/email fail backend Zod validation
+      if (profileData.name) payload.username = profileData.name;
+      if (profileData.email) payload.email = profileData.email;
+      await withMinDuration(authService.updateProfile(payload), MIN_SAVE_DURATION_MS);
       setProfileSuccess("Profile updated successfully!");
-      setTimeout(() => setProfileSuccess(""), 3000);
+      profileSuccessTimer.current = setTimeout(() => {
+        setProfileSuccess("");
+        profileSuccessTimer.current = null;
+      }, 3000);
     } catch (err) {
       setProfileError(err.response?.data?.message || "Failed to update profile.");
     } finally {
@@ -83,16 +165,26 @@ const AccountSettings = () => {
       return;
     }
 
+    // Disable button + show spinner immediately
     setPasswordSaving(true);
 
     try {
-      await authService.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-      });
+      await withMinDuration(
+        authService.changePassword({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+        MIN_SAVE_DURATION_MS
+      );
       setPasswordSuccess("Password changed successfully!");
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setTimeout(() => setPasswordSuccess(""), 3000);
+      if (passwordSuccessTimer.current) {
+        clearTimeout(passwordSuccessTimer.current);
+      }
+      passwordSuccessTimer.current = setTimeout(() => {
+        setPasswordSuccess("");
+        passwordSuccessTimer.current = null;
+      }, 3000);
     } catch (err) {
       setPasswordError(err.response?.data?.message || "Failed to change password.");
     } finally {
@@ -112,6 +204,96 @@ const AccountSettings = () => {
           </p>
         </div>
 
+        {/* Profile Photo */}
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImagePlus className="w-5 h-5 text-accent-600" />
+              Profile Photo
+            </CardTitle>
+            <CardDescription>Upload a photo to personalize your account</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center gap-6">
+            <label
+              htmlFor="avatar-upload-input"
+              title="Change profile photo"
+              className={`relative shrink-0 group rounded-full cursor-pointer ${
+                avatarUploading ? "pointer-events-none opacity-80" : ""
+              }`}
+            >
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-full object-cover border-4 border-accent-600/20 group-hover:opacity-80 transition-opacity"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-accent-600 flex items-center justify-center text-2xl font-bold text-white group-hover:opacity-80 transition-opacity">
+                  {user?.name?.[0] || user?.username?.[0] || "U"}
+                </div>
+              )}
+              {!avatarUploading && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+              )}
+              {avatarUploading && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+            </label>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="avatar-upload-input"
+                className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-colors cursor-pointer ${
+                  avatarUploading ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {avatarUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="w-4 h-4 mr-2" />
+                    Change Photo
+                  </>
+                )}
+              </label>
+              <p className="text-xs text-muted-foreground">
+                JPEG, PNG, WebP, or GIF up to 5 MB.
+              </p>
+
+              {/* Fixed-height status slot: keeps the layout stable while uploading/success/error swap */}
+              <div className="h-6 flex items-center text-sm">
+                {!avatarUploading && avatarSuccess && (
+                  <span className="flex items-center gap-2 text-green-600">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {avatarSuccess}
+                  </span>
+                )}
+                {!avatarUploading && avatarError && (
+                  <span className="flex items-center gap-2 text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {avatarError}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <input
+              id="avatar-upload-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="sr-only"
+              onChange={handleAvatarChange}
+            />
+          </CardContent>
+        </Card>
+
         {/* Profile Information */}
         <Card className="border-none shadow-sm">
           <CardHeader>
@@ -122,19 +304,6 @@ const AccountSettings = () => {
             <CardDescription>Update your personal details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {profileSuccess && (
-              <div className="bg-green-50 text-green-600 p-3 rounded-xl text-sm border border-green-100 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                {profileSuccess}
-              </div>
-            )}
-            {profileError && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                {profileError}
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
@@ -176,6 +345,22 @@ const AccountSettings = () => {
               />
             </div>
 
+            {/* Fixed-height status slot: keeps the layout stable while saving/success/error swap */}
+            <div className="h-6 flex items-center text-sm">
+              {!profileSaving && profileSuccess && (
+                <span className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {profileSuccess}
+                </span>
+              )}
+              {!profileSaving && profileError && (
+                <span className="flex items-center gap-2 text-red-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {profileError}
+                </span>
+              )}
+            </div>
+
             <Button
               onClick={handleProfileSave}
               disabled={profileSaving}
@@ -206,19 +391,6 @@ const AccountSettings = () => {
             <CardDescription>Update your account password</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {passwordSuccess && (
-              <div className="bg-green-50 text-green-600 p-3 rounded-xl text-sm border border-green-100 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                {passwordSuccess}
-              </div>
-            )}
-            {passwordError && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                {passwordError}
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
               <div className="relative">
@@ -273,6 +445,22 @@ const AccountSettings = () => {
                   className="pl-10 h-11 rounded-xl bg-neutral-50 border-none"
                 />
               </div>
+            </div>
+
+            {/* Fixed-height status slot: keeps the layout stable while saving/success/error swap */}
+            <div className="h-6 flex items-center text-sm">
+              {!passwordSaving && passwordSuccess && (
+                <span className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {passwordSuccess}
+                </span>
+              )}
+              {!passwordSaving && passwordError && (
+                <span className="flex items-center gap-2 text-red-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {passwordError}
+                </span>
+              )}
             </div>
 
             <Button

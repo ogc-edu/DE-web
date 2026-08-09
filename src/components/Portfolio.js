@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Layout from "./Layout";
 import { useAuth } from "../context/AuthContext";
 import { useSimulation } from "../context/SimulationContext";
-import { authService } from "../services/api";
+import { authService, uploadToS3 } from "../services/api";
 import { 
   User, 
   Mail, 
@@ -15,6 +15,7 @@ import {
   Shield,
   CreditCard,
   Bell,
+  Loader2,
   CheckCircle2,
   AlertCircle,
   GraduationCap,
@@ -33,8 +34,22 @@ import {
 } from "./ui/card";
 import { cn } from "../lib/utils";
 
+const MIN_UPLOAD_DURATION_MS = 800;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Resolves once the promise settles AND at least minMs have elapsed.
+const withMinDuration = async (promise, minMs) => {
+  const delay = wait(minMs);
+  try {
+    return await promise;
+  } finally {
+    await delay;
+  }
+};
+
 const Portfolio = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { simulations = [] } = useSimulation();
   
   const simulationCount = user?.simulationCount || simulations.length || 42; 
@@ -49,10 +64,51 @@ const Portfolio = () => {
     affiliation: user?.affiliation || "",
     profilePicture: null
   });
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarSuccess, setAvatarSuccess] = useState("");
+  const [avatarError, setAvatarError] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    // Reset the input so selecting the same file again still fires onChange
+    e.target.value = "";
+    if (!file) return;
+
+    setAvatarSuccess("");
+    setAvatarError("");
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      setAvatarError("Please choose a JPEG, PNG, WebP, or GIF image.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("Image must be 5 MB or smaller.");
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      await withMinDuration(
+        (async () => {
+          const { data } = await authService.getPresignedUrl(file.type);
+          const versionId = await uploadToS3(data.uploadUrl, file);
+          const confirmRes = await authService.confirmProfilePicture(versionId);
+          updateUser({ profilePicture: confirmRes.data.user.profilePicture });
+        })(),
+        MIN_UPLOAD_DURATION_MS
+      );
+      setAvatarSuccess("Profile picture updated successfully!");
+      setTimeout(() => setAvatarSuccess(""), 3000);
+    } catch (err) {
+      setAvatarError(err.response?.data?.message || "Failed to upload profile picture.");
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -84,12 +140,26 @@ const Portfolio = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex items-center gap-6">
             <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-accent-600/20 ring-4 ring-white">
-                {formData.username[0].toUpperCase()}
-              </div>
-              <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-gray-100 text-gray-600 hover:text-accent-600 transition-colors group-hover:scale-110 duration-200">
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-3xl object-cover shadow-xl shadow-accent-600/20 ring-4 ring-white"
+                />
+              ) : (
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-accent-600/20 ring-4 ring-white">
+                  {formData.username[0].toUpperCase()}
+                </div>
+              )}
+              <label
+                htmlFor="portfolio-avatar-input"
+                title="Change profile photo"
+                className={`absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-gray-100 text-gray-600 hover:text-accent-600 transition-colors group-hover:scale-110 duration-200 cursor-pointer ${
+                  avatarUploading ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
                 <Camera className="w-5 h-5" />
-              </button>
+              </label>
             </div>
             <div className="space-y-1">
               <h1 className="text-3xl font-extrabold text-primary-900 tracking-tight">
@@ -310,10 +380,38 @@ const Portfolio = () => {
                     <div className="space-y-1 text-center md:text-left">
                       <h4 className="font-bold text-accent-900">Profile Picture</h4>
                       <p className="text-sm text-accent-700/70 font-medium">PNG, JPG or GIF. Max 5MB.</p>
+                      {avatarSuccess && (
+                        <p className="text-sm text-green-600 font-semibold flex items-center gap-1 justify-center md:justify-start">
+                          <CheckCircle2 className="w-4 h-4" /> {avatarSuccess}
+                        </p>
+                      )}
+                      {avatarError && (
+                        <p className="text-sm text-red-600 font-semibold flex items-center gap-1 justify-center md:justify-start">
+                          <AlertCircle className="w-4 h-4" /> {avatarError}
+                        </p>
+                      )}
                     </div>
-                    <Button variant="outline" className="rounded-xl border-accent-200 text-accent-700 bg-white hover:bg-accent-50 transition-colors h-11 px-6">
-                      Update Avatar
-                    </Button>
+                    <label
+                      htmlFor="portfolio-avatar-input"
+                      className={`inline-flex items-center justify-center gap-2 rounded-xl border border-accent-200 text-accent-700 bg-white hover:bg-accent-50 transition-colors h-11 px-6 cursor-pointer font-medium text-sm ${
+                        avatarUploading ? "pointer-events-none opacity-60" : ""
+                      }`}
+                    >
+                      {avatarUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        <>Update Avatar</>
+                      )}
+                    </label>
+                    <input
+                      id="portfolio-avatar-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={handleAvatarChange}
+                    />
                   </div>
                 </div>
               </CardContent>

@@ -43,9 +43,15 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, []);
 
-  const login = async (credentials) => {
+  const login = async (credentials, remember = false) => {
     const response = await authService.login(credentials);
     const { token } = response.data;
+    // Store the token BEFORE fetching the profile so the axios interceptor attaches it
+    if (remember) {
+      localStorage.setItem("token", token);
+    } else {
+      sessionStorage.setItem("token", token);
+    }
     // Backend login returns only the token; fetch the full profile for user state
     const profileResponse = await authService.getProfile();
     const { user } = profileResponse.data;
@@ -60,8 +66,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (updates) => {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
