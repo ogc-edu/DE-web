@@ -41,13 +41,12 @@ function Login() {
     setLoading(true);
 
     try {
-      const data = await login({ email, password });
-      const { token, user } = data;
+      const data = await login({ email, password }, remember);
+      const { user } = data;
+      // token is stored by AuthContext.login before fetching the profile
       if (remember) {
-        localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
       } else {
-        sessionStorage.setItem("token", token);
         sessionStorage.setItem("user", JSON.stringify(user));
       }
       setMessage("Login successful!");
