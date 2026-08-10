@@ -67,6 +67,11 @@ describe("authService", () => {
     authService.logout();
     expect(mockInstance.post).toHaveBeenCalledWith("/api/v1/logout");
   });
+
+  test("refreshToken calls POST /api/v1/refresh", () => {
+    authService.refreshToken();
+    expect(mockInstance.post).toHaveBeenCalledWith("/api/v1/refresh");
+  });
 });
 
 describe("simulationService", () => {

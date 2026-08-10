@@ -12,6 +12,12 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // Required for the httpOnly refresh-token cookie to be stored + sent on
+  // XHR (login sets it via Set-Cookie). Works same-site (e.g. frontend
+  // de.example.com -> api.example.com) once the backend CORS_ORIGIN lists the
+  // frontend origin. Cross-site deployments (S3 website endpoint vs API on a
+  // different registrable domain) will NOT carry a sameSite:strict cookie.
+  withCredentials: true,
 });
 
 // Add interceptor for auth token
@@ -30,6 +36,9 @@ export const authService = {
   login: (credentials) => api.post("/api/v1/login", credentials),
   register: (userData) => api.post("/api/v1/register", userData),
   verifyToken: () => api.post("/api/v1/verify"),
+  // Rotate the access token with the httpOnly refresh cookie (POST /api/v1/refresh).
+  // Not yet wired into the app (no silent-refresh interceptor) — backend endpoint ready.
+  refreshToken: () => api.post("/api/v1/refresh"),
   getProfile: () => api.get("/api/v1/user/profile"),
   updateProfile: (userData) => api.patch("/api/v1/user/profile", userData),
   changePassword: (data) => api.patch("/api/v1/user/password", data),
