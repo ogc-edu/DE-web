@@ -62,6 +62,11 @@ describe("authService", () => {
     authService.changePassword(data);
     expect(mockInstance.patch).toHaveBeenCalledWith("/api/v1/user/password", data);
   });
+
+  test("logout calls POST /api/v1/logout", () => {
+    authService.logout();
+    expect(mockInstance.post).toHaveBeenCalledWith("/api/v1/logout");
+  });
 });
 
 describe("simulationService", () => {

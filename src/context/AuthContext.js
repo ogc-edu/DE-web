@@ -71,6 +71,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Invalidate the refresh-token cookie on the backend (fire-and-forget so a
+    // network failure never blocks the client-side logout).
+    const logoutPromise = authService.logout && authService.logout();
+    if (logoutPromise && typeof logoutPromise.catch === "function") {
+      logoutPromise.catch(() => {});
+    }
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
     setUser(null);

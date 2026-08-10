@@ -59,6 +59,7 @@ function Register() {
         username: formData.name,
         email: formData.email,
         password: formData.password,
+        affiliation: formData.affiliation,
       });
       setMessage("Registration successful! Redirecting to login...");
       setTimeout(() => navigate("/api/login"), 1500);

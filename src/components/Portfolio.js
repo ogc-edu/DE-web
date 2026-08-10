@@ -58,9 +58,8 @@ const Portfolio = () => {
   const [saveSuccess, setSaveSuccess] = useState("");
   const [saveError, setSaveError] = useState("");
   const [formData, setFormData] = useState({
-    username: user?.name || "Researcher",
+    username: user?.name || user?.username || "Researcher",
     email: user?.email || "researcher@example.com",
-    password: "",
     affiliation: user?.affiliation || "",
     profilePicture: null
   });
@@ -116,15 +115,21 @@ const Portfolio = () => {
     setSaveError("");
 
     try {
+      // Backend PATCH /user/profile expects `username` (NOT `name`) and has no
+      // password field — password changes go through /user/password only.
       const updateData = {
-        name: formData.username,
+        username: formData.username,
         email: formData.email,
         affiliation: formData.affiliation,
       };
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
       await authService.updateProfile(updateData);
+      // Propagate the new values app-wide (sidebar, header) immediately.
+      updateUser({
+        username: formData.username,
+        name: formData.username,
+        email: formData.email,
+        affiliation: formData.affiliation,
+      });
       setSaveSuccess("Profile updated successfully!");
       setIsEditing(false);
       setTimeout(() => setSaveSuccess(""), 3000);
@@ -326,24 +331,8 @@ const Portfolio = () => {
                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2 px-1">
                       <Lock className="w-4 h-4 text-gray-400" /> Password
                     </label>
-                    <div className="relative">
-                      <Input 
-                        name="password"
-                        type="password"
-                        placeholder="Enter new password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className={cn(
-                          "h-12 rounded-xl border-gray-200 focus:ring-accent-600 transition-all pr-12",
-                          !isEditing && "bg-gray-50/50 border-transparent text-gray-600 font-medium tracking-widest"
-                        )}
-                      />
-                      {isEditing && (
-                        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent-600">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                      )}
+                    <div className="h-12 flex items-center px-4 bg-gray-50/50 border border-transparent rounded-xl text-gray-500 text-sm">
+                      Change your password in Account Settings.
                     </div>
                   </div>
                   <div className="space-y-3">

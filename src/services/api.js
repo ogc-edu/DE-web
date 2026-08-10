@@ -33,6 +33,7 @@ export const authService = {
   getProfile: () => api.get("/api/v1/user/profile"),
   updateProfile: (userData) => api.patch("/api/v1/user/profile", userData),
   changePassword: (data) => api.patch("/api/v1/user/password", data),
+  logout: () => api.post("/api/v1/logout"),
   getPresignedUrl: (contentType) =>
     api.get("/api/v1/user/profile/presign", { params: { contentType } }),
   confirmProfilePicture: (versionId) =>

@@ -91,7 +91,7 @@ function Login() {
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 left-3 flex items-center pointer-events-none text-muted-foreground">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
                   <Mail className="h-4 w-4" />
                 </div>
                 <Input
@@ -140,13 +140,17 @@ function Login() {
                   Remember me
                 </Label>
               </div>
-              <Link
-                to="/api/forgot-password"
-                size="sm"
-                className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors"
+              <button
+                type="button"
+                onClick={() => {
+                  setMessage(
+                    "Password reset is not available yet — please contact your administrator."
+                  );
+                }}
+                className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors cursor-pointer"
               >
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             <Button
