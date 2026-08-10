@@ -66,6 +66,7 @@ src/
 | `/api/data` | SimulationHistory | Full history table w/ status badges, filters |
 | `/api/portfolio` | Portfolio | Student/supervisor showcase + profile editor |
 | `/api/settings` | AccountSettings | Profile edit, change password, sign out |
+| `/api/admin` | AdminQueue | **Admin-only** live SQS queue monitor (hidden nav entry for non-admins) |
 
 Auth is **not** enforced client-side (no route guard); enforcement is server-side.
 
@@ -73,7 +74,7 @@ Auth is **not** enforced client-side (no route guard); enforcement is server-sid
 
 - **AuthContext** — `user`, `login`, `logout`, `loading`. On mount, verifies stored token via `POST /api/auth/verify`; stores `userData` (renames `_id` → `id`). Token persistence is done by Login.js (`localStorage`/`sessionStorage`), read by the axios interceptor.
 - **SimulationContext** — `simulations`, `loading`, `error`, `activeSimulation`, `isSimulating`; actions: `fetchSimulations`, `deleteSimulation`, `addSimulation`. On API failure it **logs + exposes `error`** (banner in Dashboard/SimulationHistory) instead of silently swapping in `mockSimulations`. It also **polls active simulations** (`pending`/`running`) via `simulationService.getResults(id)` every 5s and merges live `status`/`progress`/`completedModels`/`bestFitness` into the display records; polling stops once all sims reach a terminal state and timers are cleared on unmount.
-- **api.js** — `API_BASE_URL` from `REACT_APP_API_URL` (full URL wins) else `{REACT_APP_BACKEND_PROTOCOL}://{REACT_APP_BACKEND_HOST}:{REACT_APP_BACKEND_PORT}` (defaults `http://localhost:3000`). `.env` at repo root (git-tracked — see hygiene note).
+- **api.js** — `API_BASE_URL` from `REACT_APP_API_URL` (full URL wins) else `{REACT_APP_BACKEND_PROTOCOL}://{REACT_APP_BACKEND_HOST}:{REACT_APP_BACKEND_PORT}` (defaults `http://localhost:3000`). `.env` at repo root (git-tracked — see hygiene note). Services: `authService`, `simulationService` (incl. `getResults(id)`), `adminService.getQueueStatus()` → `GET /api/v1/admin/queue`.
 - **fitnessData.js** (120 KB) — pre-computed `avgLowestFitness` per (crossover × selection × function × model). All 4 crossovers (exponential, binomial, onepoint, twopoint) × both selections (sts, greedy) are populated. Functions are named like `axisParallelHyperEllipsoid` → display name "Axis Parallel Hyper Ellipsoid Function" with a KaTeX description.
 - **mockData.js** — 80 fake simulation records + `deVariants` + 8 `benchmarkFunctions` names.
 
@@ -102,7 +103,7 @@ Auth is **not** enforced client-side (no route guard); enforcement is server-sid
 ```bash
 npm start        # dev server on PORT 3001 (CRA default 3000 is overridden)
 npm run build    # production build → build/
-npm test         # Jest + RTL (react-scripts test) — 42/42 passing (TASK 3)
+npm test         # Jest + RTL (react-scripts test) — 49/49 passing (TASK 3 + TASK 4)
 ```
 
 Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test` / `npm run build` can be run locally.

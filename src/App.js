@@ -9,6 +9,7 @@ import Simulator from "./components/Simulator";
 import Portfolio from "./components/Portfolio";
 import SimulationHistory from "./components/SimulationHistory";
 import AccountSettings from "./components/AccountSettings";
+import AdminQueue from "./components/AdminQueue";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -57,6 +58,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AccountSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/api/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminQueue />
                 </ProtectedRoute>
               }
             />

@@ -21,7 +21,7 @@ jest.mock("axios", () => {
 const axios = require("axios").default;
 const mockInstance = axios.create();
 
-const { authService, simulationService } = require("../api");
+const { authService, simulationService, adminService } = require("../api");
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -93,5 +93,12 @@ describe("simulationService", () => {
   test("delete calls DELETE /api/v1/simulation/delete/:id", () => {
     simulationService.delete("123");
     expect(mockInstance.delete).toHaveBeenCalledWith("/api/v1/simulation/delete/123");
+  });
+});
+
+describe("adminService", () => {
+  test("getQueueStatus calls GET /api/v1/admin/queue", () => {
+    adminService.getQueueStatus();
+    expect(mockInstance.get).toHaveBeenCalledWith("/api/v1/admin/queue");
   });
 });

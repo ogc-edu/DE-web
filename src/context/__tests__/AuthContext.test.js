@@ -17,6 +17,7 @@ const TestConsumer = () => {
   return (
     <div>
       <span data-testid="user">{user ? user.name : "none"}</span>
+      <span data-testid="role">{user ? user.role || "none" : "none"}</span>
       <button onClick={() => login({ email: "test@test.com", password: "pass" })}>Login</button>
       <button onClick={logout}>Logout</button>
     </div>
@@ -92,5 +93,30 @@ describe("AuthContext", () => {
     });
 
     expect(screen.getByTestId("user").textContent).toBe("none");
+  });
+
+  test("verify with a stored token fetches the profile so role is available", async () => {
+    localStorage.setItem("token", "valid-token");
+    authService.verifyToken.mockResolvedValue({
+      status: 200,
+      data: { userData: { userId: "u1", username: "admin-user" } },
+    });
+    authService.getProfile.mockResolvedValue({
+      data: {
+        user: { _id: "u1", username: "admin-user", email: "a@b.com", role: "admin" },
+      },
+    });
+
+    await act(async () => {
+      render(
+        <AuthProvider>
+          <TestConsumer />
+        </AuthProvider>
+      );
+    });
+
+    expect(authService.getProfile).toHaveBeenCalled();
+    expect(screen.getByTestId("user").textContent).toBe("admin-user");
+    expect(screen.getByTestId("role").textContent).toBe("admin");
   });
 });

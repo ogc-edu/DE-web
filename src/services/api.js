@@ -68,4 +68,10 @@ export const simulationService = {
   delete: (id) => api.delete(`/api/v1/simulation/delete/${id}`),
 };
 
+export const adminService = {
+  // SQS queue metrics (depth, in-flight, delayed, oldest message age).
+  // Server returns 403 for non-admins, 503 when SQS_QUEUE_URL is missing.
+  getQueueStatus: () => api.get("/api/v1/admin/queue"),
+};
+
 export default api;

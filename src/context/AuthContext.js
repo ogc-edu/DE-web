@@ -22,12 +22,22 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await authService.verifyToken(); //verify token with backend
         
-        if(response.data && response.status === 200) {
+        if (response.data && response.status === 200) {
           const { userData } = response.data;
+          // verifyToken returns only the basics — fetch the full profile so
+          // role-based UI (e.g. the admin queue page) works after a reload.
+          let profile = {};
+          try {
+            const profileResponse = await authService.getProfile();
+            profile = profileResponse.data?.user || {};
+          } catch (profileError) {
+            console.error("Error fetching profile after verify:", profileError);
+          }
           setUser({
             ...userData,
-            id: userData.userId,
-            name: userData.username,
+            ...profile,
+            id: userData.userId || profile._id,
+            name: userData.username || profile.username || profile.name,
           });
         }
         setLoading(false);

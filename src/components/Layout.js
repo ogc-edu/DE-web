@@ -10,6 +10,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { cn } from "../lib/utils";
@@ -48,6 +49,10 @@ const Layout = ({ children }) => {
     { icon: Database, label: "Simulation History", href: "/api/data" },
     { icon: User, label: "Portfolio", href: "/api/portfolio" },
     { icon: Settings, label: "Account Settings", href: "/api/settings" },
+    // Admin-only entry: hidden for regular users (server enforces access too).
+    ...(user?.role === "admin"
+      ? [{ icon: ShieldCheck, label: "Admin Queue", href: "/api/admin" }]
+      : []),
   ];
 
   return (
