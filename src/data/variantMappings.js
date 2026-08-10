@@ -86,7 +86,7 @@ export const simulationToDisplay = (sim) => {
     np: sim.np ?? null,
     f: sim.f ?? null,
     cr: sim.cr ?? null,
-    generations: sim.generations ?? null,
+    generations: sim.generations ?? sim.gen ?? null,
     dimension: sim.dimension ?? sim.dim ?? null,
   };
 };

@@ -1,7 +1,17 @@
-import React, { createContext, useState, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { simulationService } from "../services/api";
-import { mockSimulations } from "../data/mockData";
 import { simulationToDisplay } from "../data/variantMappings";
+
+// How often to poll active (pending/running) simulations for live progress.
+const POLL_INTERVAL_MS = 5000;
+const ACTIVE_STATUSES = ["pending", "running"];
 
 const SimulationContext = createContext(undefined, undefined);
 
@@ -14,6 +24,18 @@ export const SimulationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const pollTimerRef = useRef(null);
+  // Keep a render-latest mirror so interval callbacks never read stale state.
+  const simulationsRef = useRef(simulations);
+  simulationsRef.current = simulations;
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
+
   const fetchSimulations = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -22,8 +44,10 @@ export const SimulationProvider = ({ children }) => {
       setSimulations(response.data.map(simulationToDisplay));
     } catch (err) {
       console.error("Error fetching simulations:", err);
-      setError(err.message);
-      setSimulations(mockSimulations);
+      // Do NOT silently swap in mock data — surface the real backend error so
+      // broken wiring is visible. (mockSimulations remains available in
+      // src/data/mockData.js for an explicit offline mode if ever needed.)
+      setError(err.message || "Failed to load simulations");
     } finally {
       setLoading(false);
     }
@@ -44,6 +68,70 @@ export const SimulationProvider = ({ children }) => {
   const addSimulation = useCallback((simulation) => {
     setSimulations((prev) => [simulation, ...prev]);
   }, []);
+
+  // Fetch the live status/progress/results for one simulation and merge it into
+  // the display record. Called on a 5s cadence for pending/running simulations.
+  const pollActiveSimulations = useCallback(async () => {
+    const active = simulationsRef.current.filter((sim) =>
+      ACTIVE_STATUSES.includes(sim.status)
+    );
+    if (active.length === 0) {
+      stopPolling();
+      return;
+    }
+    await Promise.all(
+      active.map(async (sim) => {
+        try {
+          const { data } = await simulationService.getResults(sim.id);
+          setSimulations((prev) =>
+            prev.map((s) => {
+              if (s.id !== sim.id) return s;
+              const firstResult = Array.isArray(data.simulationData)
+                ? data.simulationData[0]
+                : null;
+              return {
+                ...s,
+                status: data.status ?? s.status,
+                progress: data.progress ?? s.progress,
+                completedModels: data.completedModels ?? s.completedModels,
+                bestFitness:
+                  firstResult && firstResult.lowestFitness != null
+                    ? firstResult.lowestFitness
+                    : s.bestFitness,
+              };
+            })
+          );
+        } catch (err) {
+          // Transient polling failure — keep the last known values and move on;
+          // do not flood the global error banner at a 5s cadence.
+          console.error(`Error polling simulation ${sim.id}:`, err);
+        }
+      })
+    );
+  }, [stopPolling]);
+
+  // Start polling as soon as any simulation is pending/running; stop it as soon
+  // as every simulation reaches a terminal state (completed/failed/cancelled).
+  useEffect(() => {
+    const hasActive = simulations.some((sim) =>
+      ACTIVE_STATUSES.includes(sim.status)
+    );
+    if (hasActive) {
+      if (!pollTimerRef.current) {
+        pollTimerRef.current = setInterval(
+          pollActiveSimulations,
+          POLL_INTERVAL_MS
+        );
+        // Kick off an immediate first poll instead of waiting 5s.
+        pollActiveSimulations();
+      }
+    } else {
+      stopPolling();
+    }
+  }, [simulations, pollActiveSimulations, stopPolling]);
+
+  // Clear any pending timer on unmount.
+  useEffect(() => () => stopPolling(), [stopPolling]);
 
   return (
     <SimulationContext.Provider

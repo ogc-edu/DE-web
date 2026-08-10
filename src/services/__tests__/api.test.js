@@ -79,6 +79,11 @@ describe("simulationService", () => {
     expect(mockInstance.get).toHaveBeenCalledWith("/api/v1/simulation/get/123");
   });
 
+  test("getResults calls GET /api/v1/simulation/get/:id/results", () => {
+    simulationService.getResults("123");
+    expect(mockInstance.get).toHaveBeenCalledWith("/api/v1/simulation/get/123/results");
+  });
+
   test("create calls POST /api/v1/simulation/create", () => {
     const data = { functions: [1], methods: { mutation: [1], crossover: [1], selection: [1] } };
     simulationService.create(data);

@@ -11,6 +11,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -48,7 +49,7 @@ const statusConfig = {
 };
 
 const SimulationHistory = () => {
-  const { simulations, loading, fetchSimulations, deleteSimulation } = useSimulation();
+  const { simulations, loading, error, fetchSimulations, deleteSimulation } = useSimulation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBenchmark, setFilterBenchmark] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -129,6 +130,18 @@ const SimulationHistory = () => {
             Browse and manage all your past simulation runs
           </p>
         </div>
+
+        {error && (
+          <div className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">
+                Failed to load simulations
+              </p>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full md:w-auto">

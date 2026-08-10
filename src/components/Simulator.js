@@ -113,15 +113,15 @@ const Simulator = () => {
   const validatePage1 = () => {
     const newErrors = {};
 
-    // Validate population
+    // Validate population (backend/de.cpp range: 10-40)
     const population = parseInt(formData.population);
     if (
       !formData.population ||
       isNaN(population) ||
       population < 10 ||
-      population > 20
+      population > 40
     ) {
-      newErrors.population = "Population must be between 10 and 20";
+      newErrors.population = "Population must be between 10 and 40";
     }
 
     // Validate scaling factor
@@ -157,15 +157,15 @@ const Simulator = () => {
       newErrors.generations = "Generations must be between 1 and 100000";
     }
 
-    // Validate dimension
+    // Validate dimension (must match de.cpp limit of 30)
     const dimension = parseInt(formData.dimension);
     if (
       !formData.dimension ||
       isNaN(dimension) ||
       dimension < 1 ||
-      dimension > 1000
+      dimension > 30
     ) {
-      newErrors.dimension = "Dimension must be between 1 and 1000";
+      newErrors.dimension = "Dimension must be between 1 and 30";
     }
 
     setErrors(newErrors);
@@ -197,12 +197,6 @@ const Simulator = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const validateForm = () => {
-    const page1Valid = validatePage1();
-    const page2Valid = validatePage2();
-    return page1Valid && page2Valid;
   };
 
   const handleNext = () => {
@@ -239,8 +233,9 @@ const Simulator = () => {
     setIsSubmitting(true);
 
     try {
-      // Backend contract: integer IDs only. np/f/cr/generations/dimension are
-      // UI-only (backend schema has no fields for them).
+      // Backend contract: integer IDs for functions/methods + the real DE
+      // algorithm params (np/f/cr/gen/dim), which the backend persists and
+      // forwards to the SQS worker (ranges mirror the backend/de.cpp limits).
       const simulationData = {
         functions: formData.benchmarks
           .map((name) => functionNameToId[name])
@@ -256,6 +251,11 @@ const Simulator = () => {
             .map((name) => selectionNameToId[name])
             .filter((id) => id != null),
         },
+        np: parseInt(formData.population, 10),
+        f: parseFloat(formData.scalingFactor),
+        cr: parseFloat(formData.crossoverRate),
+        gen: parseInt(formData.generations, 10),
+        dim: parseInt(formData.dimension, 10),
       };
 
       const response = await simulationService.create(simulationData);
@@ -448,7 +448,7 @@ const Simulator = () => {
                       id="population"
                       type="number"
                       min="10"
-                      max="20"
+                      max="40"
                       step="1"
                       value={formData.population}
                       onChange={(e) =>
@@ -467,7 +467,7 @@ const Simulator = () => {
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      Range: 10-20
+                      Range: 10-40
                     </p>
                   </div>
 
@@ -551,7 +551,7 @@ const Simulator = () => {
                       id="dimension"
                       type="number"
                       min="1"
-                      max="1000"
+                      max="30"
                       step="1"
                       value={formData.dimension}
                       onChange={(e) => handleChange("dimension", e.target.value)}
@@ -568,7 +568,7 @@ const Simulator = () => {
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      Range: 1-1000
+                      Range: 1-30 (must match the DE engine)
                     </p>
                   </div>
 

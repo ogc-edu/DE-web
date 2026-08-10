@@ -62,6 +62,8 @@ export const simulationService = {
     return { ...response, data: response.data.simulations };
   },
   getById: (id) => api.get(`/api/v1/simulation/get/${id}`),
+  // Live progress/status for a single simulation (polled while pending/running).
+  getResults: (id) => api.get(`/api/v1/simulation/get/${id}/results`),
   create: (data) => api.post("/api/v1/simulation/create", data),
   delete: (id) => api.delete(`/api/v1/simulation/delete/${id}`),
 };

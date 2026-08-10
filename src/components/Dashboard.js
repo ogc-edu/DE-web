@@ -20,6 +20,10 @@ import {
   List,
   Filter,
   Loader2,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -49,10 +53,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { cn } from "../lib/utils";
+
+const statusConfig = {
+  completed: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", label: "Completed" },
+  running: { icon: Loader2, color: "text-blue-600", bg: "bg-blue-50", label: "Running" },
+  pending: { icon: Clock, color: "text-amber-600", bg: "bg-amber-50", label: "Pending" },
+  failed: { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Failed" },
+};
+
+const StatusBadge = ({ status }) => {
+  const config = statusConfig[status] || statusConfig.pending;
+  const Icon = config.icon;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", config.bg, config.color)}>
+      <Icon className={cn("w-3.5 h-3.5", status === "running" && "animate-spin")} />
+      {config.label}
+    </span>
+  );
+};
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { simulations, loading, fetchSimulations, deleteSimulation } = useSimulation();
+  const { simulations, loading, error, fetchSimulations, deleteSimulation } = useSimulation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBenchmark, setFilterBenchmark] = useState("all");
   const [sortConfig, setSortConfig] = useState({
@@ -196,6 +219,19 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Error state — real backend failures are surfaced, not hidden */}
+        {error && (
+          <div className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">
+                Failed to load simulations
+              </p>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -318,6 +354,7 @@ function Dashboard() {
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
                   </TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
                   <TableHead
                     className="font-bold cursor-pointer hover:text-accent-600 transition-colors"
                     onClick={() => handleSort("timestamp")}
@@ -353,6 +390,22 @@ function Dashboard() {
                     </TableCell>
                     <TableCell className="text-right font-mono font-medium text-accent-600">
                       {sim.bestFitness != null ? sim.bestFitness.toExponential(4) : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={sim.status || "pending"} />
+                      {(sim.status === "pending" || sim.status === "running") && (
+                        <div className="mt-2 w-28">
+                          <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-accent-600 rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min(sim.progress ?? 0, 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {sim.progress ?? 0}% · {sim.completedModels ?? 0}/{sim.totalModels ?? "?"} models
+                          </p>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
