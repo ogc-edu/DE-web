@@ -100,6 +100,12 @@ describe("simulationService", () => {
     expect(mockInstance.post).toHaveBeenCalledWith("/api/v1/simulation/create", data);
   });
 
+  test("importFile calls POST /api/v1/simulation/import", () => {
+    const payload = { content: "model\tbenchmark\tlowestFitness", filename: "data.txt" };
+    simulationService.importFile(payload);
+    expect(mockInstance.post).toHaveBeenCalledWith("/api/v1/simulation/import", payload);
+  });
+
   test("delete calls DELETE /api/v1/simulation/delete/:id", () => {
     simulationService.delete("123");
     expect(mockInstance.delete).toHaveBeenCalledWith("/api/v1/simulation/delete/123");

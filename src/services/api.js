@@ -75,6 +75,9 @@ export const simulationService = {
   // Live progress/status for a single simulation (polled while pending/running).
   getResults: (id) => api.get(`/api/v1/simulation/get/${id}/results`),
   create: (data) => api.post("/api/v1/simulation/create", data),
+  // Import a user-provided .txt results file (content read client-side).
+  importFile: ({ content, filename }) =>
+    api.post("/api/v1/simulation/import", { content, filename }),
   delete: (id) => api.delete(`/api/v1/simulation/delete/${id}`),
 };
 

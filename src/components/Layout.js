@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   PlayCircle,
   Database,
+  FileUp,
   User,
   Settings,
   Menu,
@@ -46,6 +47,7 @@ const Layout = ({ children }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/api" },
     { icon: PlayCircle, label: "Simulator", href: "/api/simulator" },
+    { icon: FileUp, label: "Import Data", href: "/api/import" },
     { icon: Database, label: "Simulation History", href: "/api/data" },
     { icon: User, label: "Portfolio", href: "/api/portfolio" },
     { icon: Settings, label: "Account Settings", href: "/api/settings" },

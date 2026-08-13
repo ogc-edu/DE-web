@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Simulator from "./components/Simulator";
+import ImportData from "./components/ImportData";
 import Portfolio from "./components/Portfolio";
 import SimulationHistory from "./components/SimulationHistory";
 import AccountSettings from "./components/AccountSettings";
@@ -34,6 +35,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Simulator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/api/import"
+              element={
+                <ProtectedRoute>
+                  <ImportData />
                 </ProtectedRoute>
               }
             />
