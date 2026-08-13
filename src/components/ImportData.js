@@ -38,16 +38,14 @@ const ImportData = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [success, setSuccess] = useState(null); // { simulationId, totalModels }
   const [error, setError] = useState(null); // { message, details: [] }
+  const [dragOver, setDragOver] = useState(false);
 
   const resetFeedback = () => {
     setSuccess(null);
     setError(null);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    // Allow re-selecting the same file.
-    e.target.value = "";
+  const ingestFile = (file) => {
     resetFeedback();
     if (!file) return;
 
@@ -81,6 +79,21 @@ const ImportData = () => {
       });
     };
     reader.readAsText(file);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    // Allow re-selecting the same file.
+    e.target.value = "";
+    ingestFile(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    ingestFile(file);
   };
 
   const handleDownloadTemplate = () => {
@@ -250,11 +263,28 @@ const ImportData = () => {
             />
             <label
               htmlFor="import-file-input"
-              className="flex flex-col items-center justify-center gap-3 p-10 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-accent-600 hover:bg-accent-50/30 transition-colors"
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+              }}
+              onDrop={handleDrop}
+              className={`flex flex-col items-center justify-center gap-3 p-10 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+                dragOver
+                  ? "border-accent-600 bg-accent-50/50"
+                  : "border-gray-300 hover:border-accent-600 hover:bg-accent-50/30"
+              }`}
             >
               <Upload className="w-8 h-8 text-muted-foreground" />
               <span className="text-sm font-medium text-primary-900">
-                Click to choose a .txt file
+                Drag & drop a .txt file, or click to browse
               </span>
               <span className="text-xs text-muted-foreground">
                 Maximum size: 5 MB

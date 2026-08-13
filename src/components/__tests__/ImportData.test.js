@@ -65,7 +65,7 @@ describe("ImportData", () => {
 
   test("rejects a non-.txt file with a helpful message", () => {
     renderPage();
-    const input = screen.getByLabelText(/click to choose/i);
+    const input = screen.getByLabelText(/\.txt file/i);
 
     fireEvent.change(input, { target: { files: [makeFile("data.csv", "content")] } });
 
@@ -79,7 +79,7 @@ describe("ImportData", () => {
     });
 
     renderPage();
-    const input = screen.getByLabelText(/click to choose/i);
+    const input = screen.getByLabelText(/\.txt file/i);
 
     const content = [
       "model\tbenchmark\tlowestFitness",
@@ -117,7 +117,7 @@ describe("ImportData", () => {
     });
 
     renderPage();
-    const input = screen.getByLabelText(/click to choose/i);
+    const input = screen.getByLabelText(/\.txt file/i);
     const content = "model\tbenchmark\tlowestFitness\nDE/best/1/bin/greedy\t1\t0.5";
 
     await act(async () => {

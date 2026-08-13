@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogIn, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -22,11 +22,8 @@ function Login() {
   const [message, setMessage] = useState("");
   const { login } = useAuth();
   const [remember, setRemember] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-
-  const handleRemember = () => {
-    setRemember(!remember);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,16 +40,18 @@ function Login() {
     try {
       const data = await login({ email, password }, remember);
       const { user } = data;
-      // token is stored by AuthContext.login before fetching the profile
       if (remember) {
         localStorage.setItem("user", JSON.stringify(user));
       } else {
         sessionStorage.setItem("user", JSON.stringify(user));
       }
-      setMessage("Login successful!");
-      setTimeout(() => navigate("/api"), 1000);
+      navigate("/api");
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Invalid email or password");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Invalid email or password"
+      );
     } finally {
       setLoading(false);
     }
@@ -77,7 +76,7 @@ function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm border border-destructive/20 animate-in fade-in zoom-in duration-300">
+              <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm border border-destructive/20">
                 {error}
               </div>
             )}
@@ -101,6 +100,7 @@ function Login() {
                   className="pl-10 h-11 rounded-xl"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -114,13 +114,26 @@ function Login() {
                 </div>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-10 h-11 rounded-xl"
+                  className="pl-10 pr-10 h-11 rounded-xl"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   required
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-primary-900"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -131,7 +144,7 @@ function Login() {
                   id="remember"
                   className="w-4 h-4 text-accent-600 border-gray-300 rounded focus:ring-accent-600 cursor-pointer"
                   checked={remember}
-                  onChange={handleRemember}
+                  onChange={() => setRemember((v) => !v)}
                 />
                 <Label
                   htmlFor="remember"
@@ -171,21 +184,14 @@ function Login() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4 pt-4 border-t border-gray-100">
           <p className="text-gray-600 text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               to="/api/register"
               className="text-accent-600 font-bold hover:text-accent-700 transition-colors"
             >
-              Join our research community
+              Create an account
             </Link>
           </p>
-          <Link
-            to="/api"
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Public Dashboard</span>
-          </Link>
         </CardFooter>
       </Card>
     </div>

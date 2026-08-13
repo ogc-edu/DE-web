@@ -6,7 +6,8 @@ import {
   Lock,
   Building2,
   Loader2,
-  ArrowLeft,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -31,6 +32,7 @@ function Register() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -52,6 +54,11 @@ function Register() {
       return;
     }
 
+    if (formData.password.length < 6 || formData.password.length > 12) {
+      setError("Password must be between 6 and 12 characters");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -62,9 +69,13 @@ function Register() {
         affiliation: formData.affiliation,
       });
       setMessage("Registration successful! Redirecting to login...");
-      setTimeout(() => navigate("/api/login"), 1500);
+      setTimeout(() => navigate("/api/login"), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Registration failed. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -109,6 +120,7 @@ function Register() {
                   className="pl-10 h-10 rounded-xl"
                   value={formData.name}
                   onChange={handleChange}
+                  autoComplete="name"
                   required
                 />
               </div>
@@ -144,6 +156,7 @@ function Register() {
                   className="pl-10 h-10 rounded-xl"
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -157,14 +170,32 @@ function Register() {
                 </div>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-10 h-10 rounded-xl"
+                  className="pl-10 pr-10 h-10 rounded-xl"
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="new-password"
+                  minLength={6}
+                  maxLength={12}
                   required
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-primary-900"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                6–12 characters (platform rule)
+              </p>
             </div>
 
             <Button
@@ -193,13 +224,6 @@ function Register() {
               Sign In
             </Link>
           </p>
-          <Link
-            to="/api"
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Public Dashboard</span>
-          </Link>
         </CardFooter>
       </Card>
     </div>

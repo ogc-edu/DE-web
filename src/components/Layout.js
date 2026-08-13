@@ -20,6 +20,8 @@ import { Button } from "./ui/button";
 const SidebarItem = ({ icon: Icon, label, href, active, collapsed }) => (
   <Link
     to={href}
+    title={collapsed ? label : undefined}
+    aria-label={label}
     className={cn(
       "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
       active
@@ -38,6 +40,11 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed }) => (
   </Link>
 );
 
+const isNavActive = (pathname, href) => {
+  if (href === "/api") return pathname === "/api" || pathname.startsWith("/api/simulations/");
+  return pathname === href || pathname.startsWith(`${href}/`);
+};
+
 const Layout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -48,10 +55,10 @@ const Layout = ({ children }) => {
     { icon: LayoutDashboard, label: "Dashboard", href: "/api" },
     { icon: PlayCircle, label: "Simulator", href: "/api/simulator" },
     { icon: FileUp, label: "Import Data", href: "/api/import" },
-    { icon: Database, label: "Simulation History", href: "/api/data" },
-    { icon: User, label: "Portfolio", href: "/api/portfolio" },
-    { icon: Settings, label: "Account Settings", href: "/api/settings" },
-    // Admin-only entry: hidden for regular users (server enforces access too).
+    { icon: Database, label: "History", href: "/api/data" },
+    { icon: Settings, label: "Settings", href: "/api/settings" },
+    // Profile kept as a secondary entry (not the primary account home).
+    { icon: User, label: "Profile", href: "/api/portfolio" },
     ...(user?.role === "admin"
       ? [{ icon: ShieldCheck, label: "Admin Queue", href: "/api/admin" }]
       : []),
@@ -78,7 +85,10 @@ const Layout = ({ children }) => {
             </div>
           )}
           {!isSidebarOpen && (
-            <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center font-bold text-white mx-auto">
+            <div
+              className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center font-bold text-white mx-auto"
+              title="DE Research Hub"
+            >
               D
             </div>
           )}
@@ -89,7 +99,7 @@ const Layout = ({ children }) => {
             <SidebarItem
               key={item.href}
               {...item}
-              active={location.pathname === item.href}
+              active={isNavActive(location.pathname, item.href)}
               collapsed={!isSidebarOpen}
             />
           ))}
@@ -106,11 +116,11 @@ const Layout = ({ children }) => {
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center text-xs font-bold shrink-0">
-                  {user.name[0]}
+                  {(user.name || user.username || "?")[0]}
                 </div>
               )}
               <div className="overflow-hidden">
-                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p className="text-sm font-bold truncate">{user.name || user.username}</p>
                 <p className="text-xs text-gray-400 truncate">{user.email}</p>
               </div>
             </div>
@@ -118,6 +128,7 @@ const Layout = ({ children }) => {
           <Button
             variant="ghost"
             onClick={logout}
+            title={!isSidebarOpen ? "Sign Out" : undefined}
             className={cn(
               "w-full justify-start gap-3 px-4 py-6 text-gray-400 hover:bg-red-500/10 hover:text-red-400 group",
               !isSidebarOpen && "justify-center"
@@ -133,6 +144,7 @@ const Layout = ({ children }) => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             className="w-full text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             {isSidebarOpen ? (
@@ -156,6 +168,7 @@ const Layout = ({ children }) => {
           variant="ghost"
           size="icon"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         >
           {isMobileMenuOpen ? (
             <X className="w-6 h-6" />
@@ -176,7 +189,7 @@ const Layout = ({ children }) => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-xl text-lg font-medium",
-                  location.pathname === item.href
+                  isNavActive(location.pathname, item.href)
                     ? "bg-accent-600 text-white"
                     : "text-gray-400"
                 )}

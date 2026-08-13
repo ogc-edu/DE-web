@@ -86,18 +86,22 @@ export const SimulationProvider = ({ children }) => {
           setSimulations((prev) =>
             prev.map((s) => {
               if (s.id !== sim.id) return s;
-              const firstResult = Array.isArray(data.simulationData)
-                ? data.simulationData[0]
-                : null;
+              const rows = Array.isArray(data.simulationData)
+                ? data.simulationData
+                : s.simulationData;
+              const values = (rows || [])
+                .map((r) => r?.lowestFitness)
+                .filter((v) => v != null && Number.isFinite(Number(v)))
+                .map(Number);
+              const bestFitness =
+                values.length > 0 ? Math.min(...values) : s.bestFitness;
               return {
                 ...s,
                 status: data.status ?? s.status,
                 progress: data.progress ?? s.progress,
                 completedModels: data.completedModels ?? s.completedModels,
-                bestFitness:
-                  firstResult && firstResult.lowestFitness != null
-                    ? firstResult.lowestFitness
-                    : s.bestFitness,
+                simulationData: rows || s.simulationData || [],
+                bestFitness,
               };
             })
           );

@@ -66,7 +66,7 @@ const DialogFooter = ({ className, ...props }) => (
 );
 DialogFooter.displayName = "DialogFooter";
 
-const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (
+const DialogTitle = React.forwardRef(({ className, children, ...props }, ref) => (
   <h2
     ref={ref}
     className={cn(
@@ -74,7 +74,9 @@ const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (
       className
     )}
     {...props}
-  />
+  >
+    {children ?? <span className="sr-only">Dialog</span>}
+  </h2>
 ));
 DialogTitle.displayName = "DialogTitle";
 

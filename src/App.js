@@ -7,6 +7,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Simulator from "./components/Simulator";
 import ImportData from "./components/ImportData";
+import SimulationDetail from "./components/SimulationDetail";
 import Portfolio from "./components/Portfolio";
 import SimulationHistory from "./components/SimulationHistory";
 import AccountSettings from "./components/AccountSettings";
@@ -43,6 +44,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ImportData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/api/simulations/:id"
+              element={
+                <ProtectedRoute>
+                  <SimulationDetail />
                 </ProtectedRoute>
               }
             />
@@ -84,6 +93,5 @@ function App() {
     </AuthProvider>
   );
 }
-
 
 export default App;

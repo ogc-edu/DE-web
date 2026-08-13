@@ -673,6 +673,33 @@ const Simulator = () => {
                 </>
               )}
 
+              {currentPage === 2 && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-blue-900">
+                  <span className="font-semibold">
+                    {(formData.benchmarks?.length || 0) *
+                      (formData.mutationSchemes?.length || 0) *
+                      (formData.crossoverMethods?.length || 0) *
+                      (formData.selectionMethods?.length || 0)}{" "}
+                    model
+                    {(formData.benchmarks?.length || 0) *
+                      (formData.mutationSchemes?.length || 0) *
+                      (formData.crossoverMethods?.length || 0) *
+                      (formData.selectionMethods?.length || 0) ===
+                    1
+                      ? ""
+                      : "s"}
+                  </span>
+                  <span className="text-blue-800/80">
+                    {" "}
+                    will run (
+                    {formData.benchmarks?.length || 0} fn ×{" "}
+                    {formData.mutationSchemes?.length || 0} mut ×{" "}
+                    {formData.crossoverMethods?.length || 0} cross ×{" "}
+                    {formData.selectionMethods?.length || 0} sel)
+                  </span>
+                </div>
+              )}
+
               {/* Navigation Buttons */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center gap-4">
