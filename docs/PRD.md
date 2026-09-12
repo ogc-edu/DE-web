@@ -46,6 +46,9 @@ A React SPA backed by a RESTful API (separate backend) that provides:
 
 ### Data Layer
 - **Mock data** (`src/data/mockData.js`): 8 benchmark functions + 80 random simulation records for offline development.
+  > **RECONCILED:** `mockData.js` is now dead (no app references) and is removed under Feature 001.
+  > Demo/reference charts are served by `src/data/fitnessData.js` (frontend-only by decision — the
+  > backend serves no demo-data endpoint).
 - **Fitness data** (`src/data/fitnessData.js`): Pre-computed convergence values for 10 benchmark functions across 10 mutation schemes, keyed by crossover + selection method. Currently populated only for Exponential Crossover (STS + Greedy).
 - **API service layer** (`src/services/api.js`): Thin wrappers around Axios — `authService` (login, register, verifyToken, updateProfile) and `simulationService` (CRUD for simulation records).
 

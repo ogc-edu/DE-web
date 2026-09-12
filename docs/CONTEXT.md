@@ -2,6 +2,11 @@
 
 > Purpose-built context for this repository. Verified against the code as of commit `1fc981a` (main branch, working tree clean).
 >
+> **Feature 001 update (post-audit):** unused deps `socket.io-client`, `date-fns`, `react-day-picker`
+> removed from `package.json`; `src/logo.svg`, `src/components/Login.css`, and `src/data/mockData.js`
+> deleted; unused `fitnessData.js` helper exports removed. Demo/reference charts remain frontend-only
+> (`fitnessData.js`); the backend serves no demo-data endpoint.
+>
 > **Session update (2026-08-09, TASK 3 — real DE params + live progress):** Simulator now sends
 > `np/f/cr/gen/dim` in the create body (client validation tightened to backend ranges: np 10–40,
 > dim 1–30); `SimulationContext` polls `GET /simulation/get/:id/results` every 5s for pending/running
@@ -114,7 +119,7 @@ Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test`
 2. ✅ **RESOLVED — repo hygiene**: `.env` and `.idea/` untracked + gitignored in `1fc981a`; `npm start` made cross-platform (`PORT=3001 react-scripts start`, was Windows-only `set PORT=5000`).
 3. **`/api/forgot-password` link** in Login.js has no matching route → 404.
 4. **Dead UI**: Dashboard table `ExternalLink`/`Download` buttons have no handlers; Portfolio "Enable 2FA", "View Alerts", "Update Avatar", camera/pen icons are non-functional.
-5. **Portfolio is placeholder-heavy**: supervisor shows "Dr. [Supervisor Name]" (PRD wants "Ts Dr. Lim Seng Poh"); hardcoded stats (Rank #12, Impact High, Premium Researcher, "3 new simulation results", "Last updated: April 13, 2026").
+5. ✅ **RESOLVED (Feature 002) — Portfolio placeholders**: supervisor now reads "Dr Lim Seng Poh / Universiti Tunku Abdul Rahman"; the fabricated stats (Rank #12, Impact High, Premium Researcher, "3 new simulation results", "Last updated: April 13, 2026") and the `|| 42` simulation-count fallback are gone. Counts (total / completed / in progress) derive from `useSimulation().simulations`. Dead controls (Enable 2FA, View Alerts, the non-functional sidebar nav) removed. Covered by `src/components/__tests__/Portfolio.test.js`.
 6. **Benchmark-name mismatch**: table filter uses `mockData.benchmarkFunctions` (8 names, e.g. "Sphere Function") while analytics charts use `fitnessData` names (10, e.g. "Axis Parallel Hyper Ellipsoid Function") — filter options won't match real simulation records.
 7. **`/api/data` (SimulationHistory) duplicates** the Dashboard table view; Dashboard's unique value is the Analytics chart view.
 8. ✅ **RESOLVED (TASK 3) — Mock fallback hides errors**: `fetchSimulations` no longer swaps in mock data on API failure — it logs and exposes `error`, rendered as a red banner in Dashboard + SimulationHistory (`mockSimulations` remains in `src/data/mockData.js` for an explicit offline mode).

@@ -11,10 +11,7 @@ import {
   Camera, 
   Save, 
   Edit2,
-  Settings,
   Shield,
-  CreditCard,
-  Bell,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -52,7 +49,12 @@ const Portfolio = () => {
   const { user, updateUser } = useAuth();
   const { simulations = [] } = useSimulation();
   
-  const simulationCount = user?.simulationCount || simulations.length || 42; 
+  // Derived from real data only — no fabricated fallback.
+  const simulationCount = simulations.length;
+  const completedCount = simulations.filter((sim) => sim.status === "completed").length;
+  const runningCount = simulations.filter(
+    (sim) => sim.status === "pending" || sim.status === "running"
+  ).length;
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState("");
@@ -173,14 +175,11 @@ const Portfolio = () => {
               <p className="text-gray-500 flex items-center gap-2 font-medium">
                 <Mail className="w-4 h-4" /> {formData.email}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-3 py-1 bg-accent-100 text-accent-700 text-xs font-bold rounded-full uppercase tracking-wider">
-                  Premium Researcher
-                </span>
-                <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                  <CheckCircle2 className="w-3 h-3" /> Verified
-                </span>
-              </div>
+              {user?.affiliation && (
+                <p className="text-sm text-gray-500 flex items-center gap-2 font-medium">
+                  <Users className="w-4 h-4" /> {user.affiliation}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-3">
@@ -249,42 +248,16 @@ const Portfolio = () => {
                 
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div className="p-4 border border-gray-100 rounded-2xl">
-                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Rank</p>
-                    <p className="text-lg font-bold text-primary-900">#12</p>
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Completed</p>
+                    <p className="text-lg font-bold text-primary-900">{completedCount}</p>
                   </div>
                   <div className="p-4 border border-gray-100 rounded-2xl">
-                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Impact</p>
-                    <p className="text-lg font-bold text-primary-900">High</p>
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">In Progress</p>
+                    <p className="text-lg font-bold text-primary-900">{runningCount}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            <div className="space-y-3">
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2">Navigation</p>
-              <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-2 space-y-1 border border-gray-100">
-                {[
-                  { icon: User, label: "Personal Information", active: true },
-                  { icon: Shield, label: "Security & Privacy", active: false },
-                  { icon: Bell, label: "Notification Settings", active: false },
-                  { icon: CreditCard, label: "Subscription Plan", active: false },
-                  { icon: Settings, label: "Preferences", active: false },
-                ].map((item, i) => (
-                  <button 
-                    key={i}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium text-sm",
-                      item.active 
-                        ? "bg-accent-50 text-accent-700 shadow-sm" 
-                        : "text-gray-500 hover:bg-gray-50 hover:text-primary-900"
-                    )}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Right Column - Forms */}
@@ -340,7 +313,7 @@ const Portfolio = () => {
                       <Activity className="w-4 h-4 text-gray-400" /> Simulation Count
                     </label>
                     <div className="h-12 flex items-center px-4 bg-gray-50/50 border border-transparent rounded-xl text-gray-600 font-bold">
-                      {simulationCount} simulations completed
+                      {completedCount} of {simulationCount} completed
                     </div>
                   </div>
                 </div>
@@ -404,46 +377,12 @@ const Portfolio = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50/50 px-8 py-4 border-t border-gray-100 flex justify-between items-center">
+              <CardFooter className="bg-gray-50/50 px-8 py-4 border-t border-gray-100">
                 <p className="text-xs text-gray-500 font-medium flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5" /> Your data is encrypted and secure
+                  <Shield className="w-3.5 h-3.5" /> Passwords are changed in Account Settings.
                 </p>
-                <p className="text-xs text-gray-400 font-medium italic">Last updated: April 13, 2026</p>
               </CardFooter>
             </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-xl shadow-gray-200/50 rounded-3xl p-6 bg-primary-900 text-white overflow-hidden relative group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accent-600/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-accent-600/30 transition-all duration-700" />
-                <div className="relative z-10 space-y-4">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-accent-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg leading-tight">Security Checkup</h3>
-                    <p className="text-primary-200 text-sm mt-1">2-Factor Authentication is currently disabled.</p>
-                  </div>
-                  <Button className="w-full bg-white text-primary-900 hover:bg-accent-50 font-bold rounded-xl h-11 shadow-lg shadow-black/20">
-                    Enable 2FA
-                  </Button>
-                </div>
-              </Card>
-
-              <Card className="border-none shadow-xl shadow-gray-200/50 rounded-3xl p-6 bg-white overflow-hidden relative group">
-                <div className="relative z-10 space-y-4">
-                  <div className="w-10 h-10 bg-accent-100 rounded-xl flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-accent-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-primary-900 leading-tight">Notifications</h3>
-                    <p className="text-gray-500 text-sm mt-1">You have 3 new simulation results to review.</p>
-                  </div>
-                  <Button variant="outline" className="w-full border-gray-200 text-primary-900 hover:bg-gray-50 font-bold rounded-xl h-11">
-                    View Alerts
-                  </Button>
-                </div>
-              </Card>
-            </div>
           </div>
         </div>
 
@@ -460,12 +399,11 @@ const Portfolio = () => {
             <CardContent className="space-y-4">
               <div className="p-4 bg-accent-50 rounded-2xl border border-accent-100">
                 <p className="text-sm text-accent-700 font-medium mb-2">This project was conducted under the supervision of:</p>
-                <p className="text-xl font-bold text-primary-900">Dr. [Supervisor Name]</p>
-                <p className="text-sm text-gray-500 mt-1">Department of [Department Name]</p>
-                <p className="text-sm text-gray-500">[University/Organization Name]</p>
+                <p className="text-xl font-bold text-primary-900">Dr Lim Seng Poh</p>
+                <p className="text-sm text-gray-500 mt-1">Universiti Tunku Abdul Rahman</p>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Special thanks to our supervisor for their invaluable guidance, mentorship, and support throughout the development of this Differential Evolution research platform.
+                Special thanks to Dr Lim Seng Poh for their invaluable guidance, mentorship, and unwavering support throughout the development of this Differential Evolution research platform.
               </p>
             </CardContent>
           </Card>
