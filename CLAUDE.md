@@ -8,17 +8,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm start                      # dev server on PORT 3001 (not CRA's 3000 — 5000 is taken by macOS AirTunes)
 npm run build                  # production build -> build/ (CRA runs ESLint as part of the build)
 npm test                       # Jest + React Testing Library, watch mode
-CI=true npm test               # single non-watch run (11 suites / 61 tests currently pass)
+CI=true npm test               # single non-watch run (13 suites / 74 tests currently pass)
 
 # one file / one test
 CI=true npx react-scripts test --watchAll=false src/context/__tests__/SimulationContext.test.js
 CI=true npx react-scripts test --watchAll=false -t "live progress polling"
 ```
 
-**Known environment breakage:** `npm run build` currently fails with
-`Cannot find module 'language-subtag-registry/data/json/registry.json'` — the installed
-`node_modules` copy of that package is incomplete. This is not a code defect; run `npm ci`
-(or reinstall `language-subtag-registry`) before trusting a build failure.
+**If the build fails on `Cannot find module 'language-subtag-registry/data/json/registry.json'`**
+(surfaced via the `jsx-a11y` ESLint plugin), the `node_modules` copy of that package is
+incomplete. It is not a code defect — `npm ci` clears it.
+
+**react-router-dom cannot be resolved by name under CRA's Jest.** `react-router-dom@7`'s
+`package.json` sets `"main": "./dist/main.js"`, a file it does not ship, and CRA 5's Jest
+resolver predates `exports` maps. That is why `src/__mocks__/react-router-dom.js` exists — a
+stub that is **auto-applied to every suite** (CRA points jest `roots` at `src/`, making that
+directory the node-module manual-mock location). Most component tests rely on it and need no
+router wrapper. A suite that needs real routing opts in with:
+
+```js
+jest.mock("react-router-dom", () => jest.requireActual("react-router"));
+```
+
+`react-router` (the core package `react-router-dom` re-exports) resolves fine and carries
+`MemoryRouter`, `BrowserRouter`, `Link`, `Routes`, `Route`, `Navigate`, and the hooks.
+`setupTests.js` polyfills `TextEncoder`/`TextDecoder`, which react-router 7 needs at import
+time and Jest 27's jsdom lacks.
 
 Backend is a **separate repository** (`DE-website-backend`). Simulator, auth, history and admin
 pages are all non-functional without it running. Configure the URL in `.env` (git-ignored; see
@@ -40,7 +55,10 @@ simulations across **80 algorithm variants** (10 mutation schemes × 4 crossover
 The backend itself is mounted at `/api/v1/*`, so a frontend route and an API path are
 distinct things that look similar. All routes except login/register are wrapped in
 `ProtectedRoute` (redirects to `/api/login`); `/api/admin` additionally gates on user role.
-There is **no catch-all `*` route** yet — unknown paths render blank (planned in Feature 003).
+A catch-all `*` route renders `NotFound`, and `/` redirects to `/api` — the deployed S3 site
+root is `/`, so it must not 404. `<Routes>` sits inside `RouteErrorBoundary`, which feeds
+`useLocation().pathname` to `ErrorBoundary` as a `resetKey` so navigating away from a route
+that threw clears the fallback rather than pinning it for the session.
 
 ### State: two contexts, no state library
 

@@ -7,10 +7,10 @@
 
 ## Health baseline (verified)
 
-- `npm test` → **61/61 pass** (11 suites, after Feature 002)
-- `npm run build` → **currently fails** only because `node_modules/language-subtag-registry`
-  is incomplete (`data/json/registry.json` missing). Environment prerequisite, **not a code
-  feature** — restore with `npm ci` before running any verify/build step.
+- `npm test` → **74/74 pass** (13 suites, after Feature 003)
+- `npm run build` → **passes.** The earlier failure (`Cannot find module
+  'language-subtag-registry/data/json/registry.json'`) was an incomplete `node_modules`
+  and was cleared by `npm ci` — it was never a code defect.
 
 ## Demo / reference data (recorded decision)
 
@@ -34,7 +34,7 @@ Demo data exists **only in the frontend**. The backend will serve **no endpoint*
 |----|------|--------|-----------|--------|
 | 001 | Repo Hygiene: remove dead code & unused deps | repo-quality gap | — | **Done** |
 | 002 | Portfolio: honest, data-driven, no dead UI | US-10 | — | **Done** |
-| 003 | Routing Resilience: 404 catch-all + ErrorBoundary | context gap #10 | — | Planned |
+| 003 | Routing Resilience: 404 catch-all + ErrorBoundary | context gap #10 | — | **Done** |
 | 004 | Component & Routing Test Coverage | PRD Testing Decision | 002, 003 | Planned |
 
 Sequencing: `001 → 002 → 003 → 004`. **004 must run last** (it tests the final shapes of

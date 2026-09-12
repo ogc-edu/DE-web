@@ -16,7 +16,7 @@
 | Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives, `.jsx`) | DONE |
 | Charts | Chart.js 4 + react-chartjs-2 (Bar/Line) | DONE |
 | Math | KaTeX via react-katex | DONE |
-| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (61 tests) |
+| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (74 tests) |
 
 ## Routing table (`src/App.js`)
 
@@ -32,6 +32,12 @@
 | `/api/data` | SimulationHistory (table + status filter) | Protected |
 | `/api/settings` | AccountSettings | Protected |
 | `/api/admin` | AdminQueue (admin-only) | Protected + role gate |
+| `/` | redirects to `/api` (the deployed S3 site root) | n/a |
+| `*` | NotFound (catch-all, Feature 003) | public |
+
+`<Routes>` is wrapped in `RouteErrorBoundary` — a thin function component that feeds
+`useLocation().pathname` to `ErrorBoundary` as its `resetKey`, so navigating away from a route
+that threw clears the fallback instead of pinning it for the session.
 
 ## Data & state flow
 
@@ -80,8 +86,9 @@
 3. PRD "mock data is the data layer" — `mockData.js` was dead and is **removed (Feature 001)**; demo
    charts use frontend-only `fitnessData.js` (backend serves no demo-data endpoint).
 4. PRD "fitness data only exponential" — all crossovers populated.
-5. PRD Testing section predates the 59-test suite; "each component render path" criterion not yet met (Feature 004).
+5. PRD Testing section predates the 74-test suite; "each component render path" criterion not yet met (Feature 004).
 
 ## Remaining work
 
-See `docs/IMPLEMENTATION_PLAN.md` (Features 001–004).
+See `docs/IMPLEMENTATION_PLAN.md`. Features 001–003 are **done**; only Feature 004
+(component & routing test coverage) remains.

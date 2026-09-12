@@ -1,7 +1,7 @@
 # Feature 003 — Routing Resilience: 404 Catch-All + ErrorBoundary
 
 **ID:** 003
-**Status:** Planned
+**Status:** Done
 **Depends on:** none
 **Closes:** `docs/CONTEXT.md` known-gap #10 (unknown `/api/*` renders blank page; no error boundary)
 

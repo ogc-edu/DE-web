@@ -124,7 +124,11 @@ Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test`
 7. **`/api/data` (SimulationHistory) duplicates** the Dashboard table view; Dashboard's unique value is the Analytics chart view.
 8. ✅ **RESOLVED (TASK 3) — Mock fallback hides errors**: `fetchSimulations` no longer swaps in mock data on API failure — it logs and exposes `error`, rendered as a red banner in Dashboard + SimulationHistory (`mockSimulations` remains in `src/data/mockData.js` for an explicit offline mode).
 9. **Unused files/deps**: `src/logo.svg` and `src/components/Login.css` are unreferenced (note: `src/App.css` **is** imported by `src/App.js:12`); `socket.io-client`, `date-fns`, `react-day-picker` still in `package.json` and unused (only `react-katex` is used, in FitnessChart.js).
-10. **No 404 catch-all route** — unknown `/api/*` URLs render a blank page; no error boundary.
+10. ✅ **RESOLVED (Feature 003) — routing resilience**: `src/App.js` now has a catch-all `*` route
+    rendering `NotFound`, a `/` → `/api` redirect (the deployed S3 site root used to render blank),
+    and an app-level `ErrorBoundary` around `<Routes>` keyed on the pathname so navigating away from
+    a route that threw clears the fallback. Covered by `NotFound.test.js`, `ErrorBoundary.test.js`
+    and a real routing suite in `App.test.js`.
 11. ⚠️ **Partial (TASK 3) — component tests added for Simulator** (`src/components/__tests__/Simulator.test.js`: param submission incl. np/f/cr/gen/dim, backend-range validation). Dashboard/Portfolio render tests still missing.
 12. ✅ **RESOLVED (TASK 3) — No real-time updates**: `SimulationContext` now polls `GET /simulation/get/:id/results` every 5s for pending/running simulations and live-updates progress/completedModels/status/bestFitness; Dashboard shows a status badge + progress bar; polling stops on terminal states and timers are cleared on unmount. (`socket.io-client` still unused — polling replaced the need.)
 13. ✅ **RESOLVED — frontend↔backend integration**: `src/services/api.js` now targets the real `/api/v1` endpoints (was unversioned `/api/*` that 404'd); register sends `{username,email,password}`, login fetches the profile for user state, simulation list is unwrapped + normalized via `variantMappings.js`, Simulator submits integer IDs, and `bestFitness`/`np/f/cr` render guards added. Port fixed to 3001 (5000 was owned by macOS AirTunes).
