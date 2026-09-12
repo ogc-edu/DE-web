@@ -95,6 +95,73 @@ describe("Login", () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  test("reads the backend's `error` key, not `message`", async () => {
+    // middleware/errorHandler.js sends { success: false, error: "..." }.
+    mockLogin.mockRejectedValue({
+      message: "Request failed with status code 401",
+      response: {
+        status: 401,
+        data: { success: false, error: "Invalid email or password" },
+      },
+    });
+
+    render(<Login />);
+    fillForm("ada@test.com", "wrong");
+    await submit();
+
+    expect(screen.getByText("Invalid email or password")).toBeInTheDocument();
+    expect(screen.queryByText(/status code/i)).not.toBeInTheDocument();
+  });
+
+  test("never shows axios's raw status-code string", async () => {
+    mockLogin.mockRejectedValue({
+      message: "Request failed with status code 401",
+      response: { status: 401, data: {} },
+    });
+
+    render(<Login />);
+    fillForm("ada@test.com", "wrong");
+    await submit();
+
+    expect(screen.queryByText(/status code/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Incorrect email or password.")).toBeInTheDocument();
+  });
+
+  test("explains an unreachable backend rather than blaming the password", async () => {
+    mockLogin.mockRejectedValue({ message: "Network Error" });
+
+    render(<Login />);
+    fillForm("ada@test.com", "hunter2");
+    await submit();
+
+    expect(screen.getByText(/can't reach the server/i)).toBeInTheDocument();
+  });
+
+  test("keeps the previous error in place while retrying, so the card cannot shudder", async () => {
+    mockLogin.mockRejectedValue({
+      response: { status: 401, data: { error: "Invalid email or password" } },
+    });
+
+    render(<Login />);
+    fillForm("ada@test.com", "wrong");
+    await submit();
+    expect(screen.getByText("Invalid email or password")).toBeInTheDocument();
+
+    // Submitting again must not blank the alert first — clearing and re-setting
+    // it collapses then re-expands the vertically-centred card.
+    await submit();
+    expect(screen.getByText("Invalid email or password")).toBeInTheDocument();
+  });
+
+  test("the alert region is always mounted so its reveal is animated, not a jump", () => {
+    const { container } = render(<Login />);
+
+    // Collapsed: present in the DOM at zero height rather than absent.
+    const slot = container.querySelector(".grid-rows-\\[0fr\\]");
+    expect(slot).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
   test("says password reset is unavailable rather than linking to a dead route", () => {
     render(<Login />);
 

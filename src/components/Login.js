@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { LogIn, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
@@ -13,6 +13,8 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { getApiErrorMessage } from "../lib/apiError";
+import { cn } from "../lib/utils";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -25,9 +27,25 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  // `shownAlert` drives whether the slot is open; `lastAlert` keeps the text and
+  // colour in place while it collapses, so the alert fades out rather than
+  // blanking halfway through the animation.
+  const shownAlert = error
+    ? { text: error, tone: "error" }
+    : message
+      ? { text: message, tone: "info" }
+      : null;
+  const lastAlert = useRef(null);
+  if (shownAlert) lastAlert.current = shownAlert;
+  const alert = shownAlert || lastAlert.current;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    // Deliberately NOT clearing `error` here. Blanking it now and setting it
+    // again when the request fails collapses and re-expands the alert — two
+    // layout shifts in quick succession, which is the "shaking" on retry. A
+    // stale error is harmless while the button reads "Signing in...", and it
+    // is replaced on failure or navigated away from on success.
     setMessage("");
 
     if (!email || !password) {
@@ -47,11 +65,9 @@ function Login() {
       }
       navigate("/api");
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Invalid email or password"
-      );
+      // Never surface axios's own "Request failed with status code 401" — the
+      // backend puts the real reason in `data.error`. See lib/apiError.js.
+      setError(getApiErrorMessage(err, "Incorrect email or password."));
     } finally {
       setLoading(false);
     }
@@ -74,19 +90,38 @@ function Login() {
           </div>
         </CardHeader>
         <CardContent>
+          {/*
+            Stable alert slot. The card is vertically centred, so a plain
+            {error && <div/>} grows it and re-centres everything — the whole
+            card visibly jumps. Animating a 0fr -> 1fr grid row expands the
+            alert smoothly instead, and living outside the form's space-y-6
+            means the collapsed state adds no gap.
+          */}
+          <div
+            className={cn(
+              "grid transition-all duration-200 ease-out",
+              shownAlert
+                ? "grid-rows-[1fr] opacity-100 mb-6"
+                : "grid-rows-[0fr] opacity-0"
+            )}
+          >
+            <div className="overflow-hidden">
+              <div
+                role="alert"
+                aria-live="polite"
+                className={cn(
+                  "p-4 rounded-xl text-sm border",
+                  alert?.tone === "error"
+                    ? "bg-destructive/10 text-destructive border-destructive/20"
+                    : "bg-green-50 text-green-600 border-green-100"
+                )}
+              >
+                {alert?.text}
+              </div>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm border border-destructive/20">
-                {error}
-              </div>
-            )}
-
-            {message && (
-              <div className="bg-green-50 text-green-600 p-4 rounded-xl text-sm border border-green-100">
-                {message}
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
