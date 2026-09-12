@@ -1,7 +1,7 @@
 // Canonical ID <-> name mappings for the DE variant space.
 // The backend stores integer IDs (functions 1-10, mutation 1-10, crossover 1-4,
 // selection 1-2) while the UI works with display names. The array index + 1 is
-// the backend ID. Order mirrors the Simulator/mockData/fitnessData conventions.
+// the backend ID. Order mirrors the Simulator/fitnessData conventions.
 
 export const functionIdToName = [
   "Axis Parallel Hyper Ellipsoid Function",

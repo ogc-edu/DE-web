@@ -45,8 +45,8 @@ export const SimulationProvider = ({ children }) => {
     } catch (err) {
       console.error("Error fetching simulations:", err);
       // Do NOT silently swap in mock data — surface the real backend error so
-      // broken wiring is visible. (mockSimulations remains available in
-      // src/data/mockData.js for an explicit offline mode if ever needed.)
+      // broken wiring is visible. (The former src/data/mockData.js fallback was
+      // removed in Feature 001; demo/reference charts use fitnessData.js.)
       setError(err.message || "Failed to load simulations");
     } finally {
       setLoading(false);

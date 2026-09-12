@@ -1,9 +1,6 @@
 import {
   getFunctionNames,
-  getCrossoverMethods,
-  getSelectionMethods,
   getFunctionDataByCrossoverAndSelection,
-  getAllFunctionData,
   crossoverMethods,
   selectionMethods,
 } from "../fitnessData";
@@ -15,16 +12,6 @@ describe("fitnessData", () => {
     expect(names.length).toBe(10);
     expect(names).toContain("sphere");
     expect(names).toContain("ackley");
-  });
-
-  test("getCrossoverMethods returns all crossover method keys", () => {
-    const methods = getCrossoverMethods();
-    expect(methods).toEqual(["exponential", "binomial", "onepoint", "twopoint"]);
-  });
-
-  test("getSelectionMethods returns all selection method keys", () => {
-    const methods = getSelectionMethods();
-    expect(methods).toEqual(["sts", "greedy"]);
   });
 
   test("getFunctionDataByCrossoverAndSelection returns data for valid combo", () => {
@@ -39,17 +26,6 @@ describe("fitnessData", () => {
   test("getFunctionDataByCrossoverAndSelection returns null for invalid combo", () => {
     const data = getFunctionDataByCrossoverAndSelection("invalid", "sts", "sphere");
     expect(data).toBeNull();
-  });
-
-  test("getAllFunctionData returns data for specific crossover and selection", () => {
-    const data = getAllFunctionData("exponential", "sts");
-    expect(Object.keys(data).length).toBe(10);
-    expect(data.sphere.name).toBe("Sphere Function");
-  });
-
-  test("getAllFunctionData with crossover=all returns combined data", () => {
-    const data = getAllFunctionData("all");
-    expect(Object.keys(data).length).toBeGreaterThan(0);
   });
 
   test("crossoverMethods has 4 entries", () => {
