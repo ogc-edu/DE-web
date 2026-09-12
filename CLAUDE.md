@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm start                      # dev server on PORT 3001 (not CRA's 3000 — 5000 is taken by macOS AirTunes)
 npm run build                  # production build -> build/ (CRA runs ESLint as part of the build)
 npm test                       # Jest + React Testing Library, watch mode
-CI=true npm test               # single non-watch run (13 suites / 74 tests currently pass)
+CI=true npm test               # single non-watch run (24 suites / 147 tests currently pass)
 
 # one file / one test
 CI=true npx react-scripts test --watchAll=false src/context/__tests__/SimulationContext.test.js
@@ -114,6 +114,9 @@ content-type don't break the presigned-URL signature.
 - Contexts: `createContext` → `export const useX = () => useContext(X)` + `export const XProvider`.
 - **Relative imports.** The `@/` → `src/` alias is configured in `jsconfig.json` but unused in app
   code; follow the existing style.
+- Two querying gotchas in component tests: `src/components/ui/dialog.jsx` is hand-rolled and
+  sets no `role="dialog"` (scope by heading text instead), and Radix `TabsTrigger` activates on
+  `mouseDown`, not `click`.
 - Tests colocated in `src/**/__tests__/`, mocking the service layer with
   `jest.mock("../../services/api", () => ({ ... }))` and contexts with
   `jest.mock("../../context/AuthContext", ...)`. `src/__mocks__/react-router-dom.js` provides a

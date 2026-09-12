@@ -1,7 +1,7 @@
 # Feature 004 — Component & Routing Test Coverage
 
 **ID:** 004
-**Status:** Planned
+**Status:** Done
 **Depends on:** **002, 003** (must run after Portfolio and App.js are final)
 **Closes:** PRD Testing Decision — "each component render path should have a focused test"
 

@@ -16,7 +16,7 @@
 | Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives, `.jsx`) | DONE |
 | Charts | Chart.js 4 + react-chartjs-2 (Bar/Line) | DONE |
 | Math | KaTeX via react-katex | DONE |
-| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (74 tests) |
+| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (147 tests, 24 suites) |
 
 ## Routing table (`src/App.js`)
 
@@ -86,9 +86,9 @@ that threw clears the fallback instead of pinning it for the session.
 3. PRD "mock data is the data layer" — `mockData.js` was dead and is **removed (Feature 001)**; demo
    charts use frontend-only `fitnessData.js` (backend serves no demo-data endpoint).
 4. PRD "fitness data only exponential" — all crossovers populated.
-5. PRD Testing section predates the 74-test suite; "each component render path" criterion not yet met (Feature 004).
+5. PRD Testing section predates the suite; the "each component render path" criterion is **met as of
+   Feature 004** — every page component has a focused test and `App.test.js` covers real routing.
 
 ## Remaining work
 
-See `docs/IMPLEMENTATION_PLAN.md`. Features 001–003 are **done**; only Feature 004
-(component & routing test coverage) remains.
+None planned. Features 001–004 in `docs/IMPLEMENTATION_PLAN.md` are all **done**.

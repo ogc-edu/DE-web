@@ -7,7 +7,7 @@
 
 ## Health baseline (verified)
 
-- `npm test` → **74/74 pass** (13 suites, after Feature 003)
+- `npm test` → **147/147 pass** (24 suites, after Feature 004 — all four features complete)
 - `npm run build` → **passes.** The earlier failure (`Cannot find module
   'language-subtag-registry/data/json/registry.json'`) was an incomplete `node_modules`
   and was cleared by `npm ci` — it was never a code defect.
@@ -35,7 +35,7 @@ Demo data exists **only in the frontend**. The backend will serve **no endpoint*
 | 001 | Repo Hygiene: remove dead code & unused deps | repo-quality gap | — | **Done** |
 | 002 | Portfolio: honest, data-driven, no dead UI | US-10 | — | **Done** |
 | 003 | Routing Resilience: 404 catch-all + ErrorBoundary | context gap #10 | — | **Done** |
-| 004 | Component & Routing Test Coverage | PRD Testing Decision | 002, 003 | Planned |
+| 004 | Component & Routing Test Coverage | PRD Testing Decision | 002, 003 | **Done** |
 
 Sequencing: `001 → 002 → 003 → 004`. **004 must run last** (it tests the final shapes of
 002 and 003). 001–003 touch disjoint files and have no inter-dependencies.

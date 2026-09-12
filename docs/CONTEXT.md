@@ -129,6 +129,10 @@ Note: node v26.5.1 / npm 11.17.0 are available on the dev machine, so `npm test`
     and an app-level `ErrorBoundary` around `<Routes>` keyed on the pathname so navigating away from
     a route that threw clears the fallback. Covered by `NotFound.test.js`, `ErrorBoundary.test.js`
     and a real routing suite in `App.test.js`.
-11. ⚠️ **Partial (TASK 3) — component tests added for Simulator** (`src/components/__tests__/Simulator.test.js`: param submission incl. np/f/cr/gen/dim, backend-range validation). Dashboard/Portfolio render tests still missing.
+11. ✅ **RESOLVED (Feature 004) — component & routing test coverage**: every page component now has a
+    focused suite (Dashboard, Portfolio, AccountSettings, Login, Register, SimulationsTable,
+    SimulationDetail, SimulationHistory, Layout, FitnessChart, CrossoverNavigation, ProtectedRoute,
+    NotFound, ErrorBoundary, Simulator, ImportData, AdminQueue), and `App.test.js` exercises real
+    routing including the signed-out redirect and the signed-in protected render. 147 tests / 24 suites.
 12. ✅ **RESOLVED (TASK 3) — No real-time updates**: `SimulationContext` now polls `GET /simulation/get/:id/results` every 5s for pending/running simulations and live-updates progress/completedModels/status/bestFitness; Dashboard shows a status badge + progress bar; polling stops on terminal states and timers are cleared on unmount. (`socket.io-client` still unused — polling replaced the need.)
 13. ✅ **RESOLVED — frontend↔backend integration**: `src/services/api.js` now targets the real `/api/v1` endpoints (was unversioned `/api/*` that 404'd); register sends `{username,email,password}`, login fetches the profile for user state, simulation list is unwrapped + normalized via `variantMappings.js`, Simulator submits integer IDs, and `bestFitness`/`np/f/cr` render guards added. Port fixed to 3001 (5000 was owned by macOS AirTunes).
