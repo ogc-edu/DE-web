@@ -9,12 +9,14 @@ import {
   getFunctionDataByCrossoverAndSelection,
 } from "../data/fitnessData";
 import { useSimulation } from "../context/SimulationContext";
+import { DUMMY_SIMULATION_ID } from "../data/dummySimulation";
 import {
   Plus,
   BarChart3,
   List,
   Loader2,
   Info,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -26,8 +28,15 @@ import { formatFitness } from "../data/variantMappings";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { simulations, loading, error, fetchSimulations, deleteSimulation } =
-    useSimulation();
+  const {
+    simulations,
+    loading,
+    error,
+    fetchSimulations,
+    deleteSimulation,
+    loadDummySimulation,
+    removeSimulation,
+  } = useSimulation();
   const [viewMode, setViewMode] = useState("table");
 
   const [activeCrossover, setActiveCrossover] = useState("exponential");
@@ -117,6 +126,15 @@ function Dashboard() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={loadDummySimulation}
+              title="Add a locally generated demo run to try the charts and table — no backend needed"
+              className="rounded-xl"
+            >
+              <FlaskConical className="w-4 h-4 mr-2" />
+              Use dummy data
+            </Button>
             <Button
               variant="outline"
               onClick={() => navigate("/api/import")}
@@ -218,6 +236,8 @@ function Dashboard() {
             loading={loading}
             error={error}
             onDelete={deleteSimulation}
+            isDummySimulation={(sim) => sim.id === DUMMY_SIMULATION_ID}
+            onRemoveDummy={() => removeSimulation(DUMMY_SIMULATION_ID)}
           />
         ) : (
           <div className="space-y-6">

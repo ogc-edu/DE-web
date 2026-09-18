@@ -2,6 +2,11 @@ import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import Dashboard from "../Dashboard";
 
+// SimulationsTable pulls result rows lazily through this service.
+jest.mock("../../services/api", () => ({
+  simulationService: { getResults: jest.fn() },
+}));
+
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("../../__mocks__/react-router-dom"),
@@ -22,6 +27,8 @@ const mockSimulation = {
   error: null,
   fetchSimulations: jest.fn(),
   deleteSimulation: jest.fn(),
+  loadDummySimulation: jest.fn(),
+  removeSimulation: jest.fn(),
 };
 jest.mock("../../context/SimulationContext", () => ({
   useSimulation: () => mockSimulation,
@@ -154,5 +161,14 @@ describe("Dashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^import data$/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/api/import");
+  });
+
+  test("the 'Use dummy data' button loads the local demo run", async () => {
+    await renderDashboard();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /use dummy data/i })
+    );
+    expect(mockSimulation.loadDummySimulation).toHaveBeenCalledTimes(1);
   });
 });

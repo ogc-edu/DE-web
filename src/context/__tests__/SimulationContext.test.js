@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import { SimulationProvider, useSimulation } from "../SimulationContext";
 import { simulationService } from "../../services/api";
+import { DUMMY_SIMULATION_ID } from "../../data/dummySimulation";
 
 jest.mock("../../services/api", () => ({
   simulationService: {
@@ -12,7 +13,15 @@ jest.mock("../../services/api", () => ({
 }));
 
 const TestConsumer = () => {
-  const { simulations, loading, error, fetchSimulations, deleteSimulation } = useSimulation();
+  const {
+    simulations,
+    loading,
+    error,
+    fetchSimulations,
+    deleteSimulation,
+    loadDummySimulation,
+    removeSimulation,
+  } = useSimulation();
   return (
     <div>
       <span data-testid="count">{simulations.length}</span>
@@ -25,6 +34,10 @@ const TestConsumer = () => {
       </span>
       <button onClick={fetchSimulations}>Fetch</button>
       <button onClick={() => deleteSimulation("1")}>Delete</button>
+      <button onClick={loadDummySimulation}>Dummy</button>
+      <button onClick={() => removeSimulation(DUMMY_SIMULATION_ID)}>
+        RemoveDummy
+      </button>
     </div>
   );
 };
@@ -111,6 +124,42 @@ describe("SimulationContext", () => {
 
     expect(screen.getByTestId("count").textContent).toBe("0");
     expect(screen.getByTestId("error").textContent).toContain("Network error");
+  });
+
+  describe("dummy demo simulation", () => {
+    const renderAnd = async (clicks = []) => {
+      await act(async () => {
+        render(
+          <SimulationProvider>
+            <TestConsumer />
+          </SimulationProvider>
+        );
+      });
+      for (const label of clicks) {
+        await act(async () => {
+          screen.getByText(label).click();
+        });
+      }
+    };
+
+    test("loadDummySimulation adds a completed local run without calling the API", async () => {
+      await renderAnd(["Dummy"]);
+      expect(screen.getByTestId("count").textContent).toBe("1");
+      expect(screen.getByTestId("statuses").textContent).toContain(
+        `${DUMMY_SIMULATION_ID}:completed:100:800`
+      );
+      expect(simulationService.getAll).not.toHaveBeenCalled();
+    });
+
+    test("reloading the dummy run replaces it instead of duplicating", async () => {
+      await renderAnd(["Dummy", "Dummy"]);
+      expect(screen.getByTestId("count").textContent).toBe("1");
+    });
+
+    test("removeSimulation clears the dummy run locally", async () => {
+      await renderAnd(["Dummy", "RemoveDummy"]);
+      expect(screen.getByTestId("count").textContent).toBe("0");
+    });
   });
 
   describe("live progress polling", () => {

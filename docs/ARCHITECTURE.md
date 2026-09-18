@@ -16,7 +16,7 @@
 | Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives, `.jsx`) | DONE |
 | Charts | Chart.js 4 + react-chartjs-2 (Bar/Line) | DONE |
 | Math | KaTeX via react-katex | DONE |
-| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (147 tests, 24 suites) |
+| Tests | Jest + React Testing Library (`react-scripts test`) | DONE (173 tests, 26 suites) |
 
 ## Routing table (`src/App.js`)
 

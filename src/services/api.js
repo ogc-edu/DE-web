@@ -67,8 +67,12 @@ export const uploadToS3 = async (uploadUrl, file) => {
 
 export const simulationService = {
   getAll: async () => {
+    // No page/limit params: the backend treats the missing/0 limit as "all".
+    // Known limitation: the backend caps limit=0 at ~1000 items, so very large
+    // accounts would need cursor pagination (nextCursor) — intentionally not
+    // built here, the list is meant to load everything.
     const response = await api.get("/api/v1/simulation/get");
-    // Backend wraps the list in { simulations, simulationCount }
+    // Backend wraps the list in { simulations, simulationCount, nextCursor }
     return { ...response, data: response.data.simulations };
   },
   getById: (id) => api.get(`/api/v1/simulation/get/${id}`),

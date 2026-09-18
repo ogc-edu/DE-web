@@ -2,10 +2,17 @@ import React, { useEffect } from "react";
 import Layout from "./Layout";
 import SimulationsTable from "./SimulationsTable";
 import { useSimulation } from "../context/SimulationContext";
+import { DUMMY_SIMULATION_ID } from "../data/dummySimulation";
 
 const SimulationHistory = () => {
-  const { simulations, loading, error, fetchSimulations, deleteSimulation } =
-    useSimulation();
+  const {
+    simulations,
+    loading,
+    error,
+    fetchSimulations,
+    deleteSimulation,
+    removeSimulation,
+  } = useSimulation();
 
   useEffect(() => {
     fetchSimulations();
@@ -29,6 +36,7 @@ const SimulationHistory = () => {
           error={error}
           onDelete={deleteSimulation}
           showStatusFilter
+          onRemoveDummy={() => removeSimulation(DUMMY_SIMULATION_ID)}
         />
       </div>
     </Layout>

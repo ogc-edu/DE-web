@@ -8,6 +8,10 @@ import React, {
 } from "react";
 import { simulationService } from "../services/api";
 import { simulationToDisplay } from "../data/variantMappings";
+import {
+  createDummySimulation,
+  DUMMY_SIMULATION_ID,
+} from "../data/dummySimulation";
 
 // How often to poll active (pending/running) simulations for live progress.
 const POLL_INTERVAL_MS = 5000;
@@ -67,6 +71,24 @@ export const SimulationProvider = ({ children }) => {
 
   const addSimulation = useCallback((simulation) => {
     setSimulations((prev) => [simulation, ...prev]);
+  }, []);
+
+  // Explicit demo mode: prepend a locally generated dummy simulation so users
+  // can try the table/detail/stats/CSV without a backend or a real run.
+  // Purely client-side — never touches the API, DB, or the SQS queue, and
+  // disappears on refresh or when replaced by a real fetch.
+  const loadDummySimulation = useCallback(() => {
+    setSimulations((prev) => {
+      const rest = prev.filter((sim) => sim.id !== DUMMY_SIMULATION_ID);
+      return [simulationToDisplay(createDummySimulation()), ...rest];
+    });
+  }, []);
+
+  // Remove any simulation from the local list without calling the API —
+  // used for the client-side dummy run (real deletions go through
+  // deleteSimulation).
+  const removeSimulation = useCallback((id) => {
+    setSimulations((prev) => prev.filter((sim) => sim.id !== id));
   }, []);
 
   // Fetch the live status/progress/results for one simulation and merge it into
@@ -151,6 +173,8 @@ export const SimulationProvider = ({ children }) => {
         fetchSimulations,
         deleteSimulation,
         addSimulation,
+        loadDummySimulation,
+        removeSimulation,
       }}
     >
       {children}

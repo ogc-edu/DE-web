@@ -4,6 +4,10 @@ import Layout from "./Layout";
 import { useSimulation } from "../context/SimulationContext";
 import { simulationService } from "../services/api";
 import { simulationToDisplay, formatFitness, modelNameFromIds, functionIdToName } from "../data/variantMappings";
+import {
+  createDummySimulation,
+  DUMMY_SIMULATION_ID,
+} from "../data/dummySimulation";
 import { exportSimulationCsv, StatusBadge } from "./SimulationsTable";
 import {
   ArrowLeft,
@@ -54,6 +58,13 @@ const SimulationDetail = () => {
   const load = async () => {
     setLoading(true);
     setError(null);
+    // The dummy demo run is generated client-side (DUMMY_SIMULATION_ID does
+    // not exist in the database) — render it locally without any API calls.
+    if (id === DUMMY_SIMULATION_ID) {
+      setSim(simulationToDisplay(createDummySimulation()));
+      setLoading(false);
+      return;
+    }
     try {
       // Prefer the results endpoint (includes simulationData + live status).
       const resultsRes = await simulationService.getResults(id);
@@ -145,6 +156,11 @@ const SimulationDetail = () => {
             </button>
             <h1 className="text-3xl font-bold text-primary-900 tracking-tight">
               Simulation details
+              {id === DUMMY_SIMULATION_ID && (
+                <span className="ml-3 align-middle inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-purple-50 text-purple-600 border border-purple-200">
+                  Demo data
+                </span>
+              )}
             </h1>
             <p className="text-muted-foreground text-sm break-all">
               ID: {id}
@@ -169,14 +185,16 @@ const SimulationDetail = () => {
               <Download className="w-4 h-4 mr-2" />
               Export CSV
             </Button>
-            <Button
-              variant="outline"
-              className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => setPendingDelete(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
+            {sim?.id !== DUMMY_SIMULATION_ID && (
+              <Button
+                variant="outline"
+                className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setPendingDelete(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
           </div>
         </div>
 

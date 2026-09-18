@@ -2,6 +2,11 @@ import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import SimulationHistory from "../SimulationHistory";
 
+// SimulationsTable pulls result rows lazily through this service.
+jest.mock("../../services/api", () => ({
+  simulationService: { getResults: jest.fn() },
+}));
+
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("../../__mocks__/react-router-dom"),
   useNavigate: () => jest.fn(),
