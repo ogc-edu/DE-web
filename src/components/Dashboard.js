@@ -4,10 +4,10 @@ import Layout from "./Layout";
 import FitnessChart from "./FitnessChart";
 import CrossoverNavigation from "./CrossoverNavigation";
 import SimulationsTable from "./SimulationsTable";
-import {
-  getFunctionNames,
-  getFunctionDataByCrossoverAndSelection,
-} from "../data/fitnessData";
+import ModelSelectorDialog from "./ModelSelectorDialog";
+import ChartFocusDialog from "./ChartFocusDialog";
+import { getFunctionNames } from "../data/fitnessData";
+import { buildChartData, functionMeta } from "../data/chartSelection";
 import { useSimulation } from "../context/SimulationContext";
 import { DUMMY_SIMULATION_ID } from "../data/dummySimulation";
 import {
@@ -24,7 +24,28 @@ import {
   CardContent,
 } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { formatFitness } from "../data/variantMappings";
+import { formatFitness, mutationIdToName } from "../data/variantMappings";
+
+// Today's behaviour, expressed in the new selection shape: one crossover, both
+// selection methods, every mutation on the x-axis, no Top-N cap.
+const DEFAULT_SELECTION = {
+  mode: "quick",
+  crossovers: ["exponential"],
+  selections: ["sts", "greedy"],
+  mutations: [...mutationIdToName],
+  topN: null,
+};
+
+// Hoisted: `getFunctionNames()` returns a fresh array on every call, so calling
+// it in the render body gave `analyticsData`'s useMemo a dep that always
+// changed — rebuilding all ten charts on every poll tick.
+const FUNCTION_KEYS = getFunctionNames();
+
+const TOP_N_OPTIONS = [
+  { value: "10", label: "Top 10" },
+  { value: "20", label: "Top 20" },
+  { value: "all", label: "All" },
+];
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -39,68 +60,41 @@ function Dashboard() {
   } = useSimulation();
   const [viewMode, setViewMode] = useState("table");
 
-  const [activeCrossover, setActiveCrossover] = useState("exponential");
-  const [showSTS, setShowSTS] = useState(true);
-  const [showGreedy, setShowGreedy] = useState(true);
+  const [sel, setSel] = useState(DEFAULT_SELECTION);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [chartType, setChartType] = useState("bar");
-  const functionNames = getFunctionNames();
+  // Which function the focused dialog is showing; null when it is closed.
+  const [focusKey, setFocusKey] = useState(null);
+
+  // A single crossover button returns to quick mode; the custom modal owns the
+  // rest of the state.
+  const selectCrossover = (crossoverKey) =>
+    setSel((prev) => ({ ...prev, mode: "quick", crossovers: [crossoverKey] }));
+
+  const toggleSelection = (selectionKey) =>
+    setSel((prev) => {
+      const next = prev.selections.includes(selectionKey)
+        ? prev.selections.filter((k) => k !== selectionKey)
+        : [...prev.selections, selectionKey];
+      // Never let both selection methods be off — the charts would go blank.
+      return next.length === 0 ? prev : { ...prev, selections: next };
+    });
 
   useEffect(() => {
     fetchSimulations();
   }, [fetchSimulations]);
 
   const analyticsData = useMemo(() => {
-    const filteredData = {};
-    functionNames.forEach((functionName) => {
-      const combinedModels = [];
-      if (showSTS) {
-        const crossoverMethodsToFetch =
-          activeCrossover === "all"
-            ? ["exponential", "binomial", "onepoint", "twopoint"]
-            : [activeCrossover];
-
-        crossoverMethodsToFetch.forEach((c) => {
-          const data = getFunctionDataByCrossoverAndSelection(
-            c,
-            "sts",
-            functionName
-          );
-          if (data?.models) combinedModels.push(...data.models);
-        });
-      }
-      if (showGreedy) {
-        const crossoverMethodsToFetch =
-          activeCrossover === "all"
-            ? ["exponential", "binomial", "onepoint", "twopoint"]
-            : [activeCrossover];
-
-        crossoverMethodsToFetch.forEach((c) => {
-          const data = getFunctionDataByCrossoverAndSelection(
-            c,
-            "greedy",
-            functionName
-          );
-          if (data?.models) combinedModels.push(...data.models);
-        });
-      }
-
-      if (combinedModels.length > 0) {
-        const baseData = getFunctionDataByCrossoverAndSelection(
-          "exponential",
-          "sts",
-          functionName
-        );
-        if (baseData) {
-          filteredData[functionName] = {
-            name: baseData.name,
-            description: baseData.description,
-            models: combinedModels,
-          };
-        }
-      }
+    const byFunction = {};
+    FUNCTION_KEYS.forEach((functionKey) => {
+      const meta = functionMeta(functionKey);
+      if (!meta) return;
+      const chart = buildChartData(functionKey, sel);
+      if (chart.datasets.length === 0 || chart.labels.length === 0) return;
+      byFunction[functionKey] = { meta, chart };
     });
-    return filteredData;
-  }, [activeCrossover, showSTS, showGreedy, functionNames]);
+    return byFunction;
+  }, [sel]);
 
   const completedWithFitness = simulations.filter(
     (s) => s.bestFitness != null && Number.isFinite(Number(s.bestFitness))
@@ -256,8 +250,9 @@ function Dashboard() {
             <Card className="border-none shadow-sm">
               <CardContent className="flex flex-wrap items-center justify-between gap-6 p-6">
                 <CrossoverNavigation
-                  activeCrossover={activeCrossover}
-                  onCrossoverChange={setActiveCrossover}
+                  selection={sel}
+                  onSelectCrossover={selectCrossover}
+                  onOpenCustom={() => setSelectorOpen(true)}
                 />
 
                 <div className="flex items-center gap-4">
@@ -282,16 +277,39 @@ function Dashboard() {
                     </TabsList>
                   </Tabs>
 
+                  <Tabs
+                    value={sel.topN == null ? "all" : String(sel.topN)}
+                    onValueChange={(value) =>
+                      setSel((prev) => ({
+                        ...prev,
+                        topN: value === "all" ? null : Number(value),
+                      }))
+                    }
+                    className="bg-neutral-50 p-1 rounded-xl"
+                  >
+                    <TabsList className="bg-transparent">
+                      {TOP_N_OPTIONS.map((option) => (
+                        <TabsTrigger
+                          key={option.value}
+                          value={option.value}
+                          className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm h-8"
+                        >
+                          {option.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       className={`h-8 rounded-lg font-bold border-2 ${
-                        showSTS
+                        sel.selections.includes("sts")
                           ? "bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
                           : "bg-white border-gray-100 text-muted-foreground"
                       }`}
-                      onClick={() => setShowSTS(!showSTS)}
+                      onClick={() => toggleSelection("sts")}
                     >
                       STS
                     </Button>
@@ -299,11 +317,11 @@ function Dashboard() {
                       variant="outline"
                       size="sm"
                       className={`h-8 rounded-lg font-bold border-2 ${
-                        showGreedy
+                        sel.selections.includes("greedy")
                           ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
                           : "bg-white border-gray-100 text-muted-foreground"
                       }`}
-                      onClick={() => setShowGreedy(!showGreedy)}
+                      onClick={() => toggleSelection("greedy")}
                     >
                       GRD
                     </Button>
@@ -313,18 +331,36 @@ function Dashboard() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(analyticsData).map(([name, data]) => (
-                <div key={name} className="h-[450px]">
+              {Object.entries(analyticsData).map(([key, { meta, chart }]) => (
+                <div key={key} className="h-[450px]">
                   <FitnessChart
-                    functionData={data}
-                    crossoverMethod={activeCrossover}
-                    showSTS={showSTS}
-                    showGreedy={showGreedy}
+                    functionData={meta}
+                    labels={chart.labels}
+                    datasets={chart.datasets}
+                    belowFloor={chart.belowFloor}
+                    horizontal={chart.horizontal}
                     chartType={chartType}
+                    onExpand={() => setFocusKey(key)}
                   />
                 </div>
               ))}
             </div>
+
+            <ModelSelectorDialog
+              open={selectorOpen}
+              onOpenChange={setSelectorOpen}
+              value={sel}
+              onApply={setSel}
+            />
+
+            <ChartFocusDialog
+              open={focusKey != null}
+              onOpenChange={(next) => !next && setFocusKey(null)}
+              functionKeys={FUNCTION_KEYS}
+              activeKey={focusKey}
+              onNavigate={setFocusKey}
+              selection={sel}
+            />
           </div>
         )}
       </div>

@@ -34,12 +34,26 @@ jest.mock("../../context/SimulationContext", () => ({
   useSimulation: () => mockSimulation,
 }));
 
-// Chart.js cannot draw on a jsdom canvas; the reference-chart tab only needs to
-// prove it swapped views.
-jest.mock("react-chartjs-2", () => ({
-  Bar: () => <div data-testid="chart" />,
-  Line: () => <div data-testid="chart" />,
-}));
+// Chart.js cannot draw on a jsdom canvas. The stub reports the series and
+// category counts so the wiring assertions have something to check.
+jest.mock("react-chartjs-2", () => {
+  const React = require("react");
+  const stub = (kind) => ({ data }) =>
+    React.createElement("div", {
+      "data-testid": "chart",
+      "data-kind": kind,
+      "data-datasets": data.datasets.map((d) => d.label).join("|"),
+      "data-labelcount": String(data.labels.length),
+    });
+  return { Bar: stub("bar"), Line: stub("line") };
+});
+
+const openCharts = async () => {
+  // Radix tab triggers activate on mouseDown, not click.
+  await act(async () => {
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /reference charts/i }));
+  });
+};
 
 const sim = (over = {}) => ({
   id: "sim-1",
@@ -119,18 +133,119 @@ describe("Dashboard", () => {
 
   test("the reference-charts tab labels itself as a static dataset", async () => {
     await renderDashboard();
-
-    // Radix tab triggers activate on mouseDown, not click.
-    await act(async () => {
-      fireEvent.mouseDown(screen.getByRole("tab", { name: /reference charts/i }));
-    });
+    await openCharts();
 
     expect(
       screen.getByText("Reference benchmark charts (static dataset)")
     ).toBeInTheDocument();
     expect(screen.getByText("Reference dataset")).toBeInTheDocument();
     // The built-in fitnessData set covers 10 benchmark functions.
-    expect(screen.getAllByTestId("chart").length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId("chart")).toHaveLength(10);
+  });
+
+  test("defaults to today's behaviour: exponential, both selections, 10 mutations", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    expect(
+      screen.getByRole("button", { name: "Exponential" }).className
+    ).toContain("bg-accent-600");
+
+    const [chart] = screen.getAllByTestId("chart");
+    expect(chart).toHaveAttribute(
+      "data-datasets",
+      "exponential · STS|exponential · Greedy"
+    );
+    expect(chart).toHaveAttribute("data-labelcount", "10");
+  });
+
+  test("the broken all-methods option is gone", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    expect(screen.queryByText("All Methods")).not.toBeInTheDocument();
+  });
+
+  test("a crossover button swaps the plotted series", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Two-Point" }));
+    });
+
+    expect(screen.getAllByTestId("chart")[0]).toHaveAttribute(
+      "data-datasets",
+      "two-point · STS|two-point · Greedy"
+    );
+  });
+
+  test("the GRD toggle drops the greedy series", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "GRD" }));
+    });
+
+    expect(screen.getAllByTestId("chart")[0]).toHaveAttribute(
+      "data-datasets",
+      "exponential · STS"
+    );
+  });
+
+  test("Custom… opens the model selector and applying it re-plots", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Custom…" }));
+    });
+
+    // ui/dialog.jsx sets no role="dialog" — query by its heading text.
+    expect(screen.getByText("Custom model selection")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Binomial Crossover"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    });
+
+    expect(screen.queryByText("Custom model selection")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Custom (4 series)" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByTestId("chart")[0]).toHaveAttribute(
+      "data-datasets",
+      "exponential · STS|exponential · Greedy|binomial · STS|binomial · Greedy"
+    );
+  });
+
+  test("Top 10 collapses each chart to a single ranked series", async () => {
+    await renderDashboard();
+    await openCharts();
+
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByRole("tab", { name: "Top 10" }));
+    });
+
+    const [chart] = screen.getAllByTestId("chart");
+    expect(chart).toHaveAttribute("data-datasets", "Avg. lowest fitness");
+    expect(chart).toHaveAttribute("data-labelcount", "10");
+
+    await act(async () => {
+      fireEvent.mouseDown(screen.getByRole("tab", { name: "All" }));
+    });
+
+    expect(screen.getAllByTestId("chart")[0]).toHaveAttribute(
+      "data-labelcount",
+      "10"
+    );
+    expect(screen.getAllByTestId("chart")[0]).toHaveAttribute(
+      "data-datasets",
+      "exponential · STS|exponential · Greedy"
+    );
   });
 
   test("surfaces a backend error instead of pretending the list is empty", async () => {
