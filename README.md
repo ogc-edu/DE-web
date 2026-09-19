@@ -1,48 +1,54 @@
 # Differential Evolution Research Dashboard
 
-A modern React-based web application to simulate and visualize the performance of different Differential Evolution (DE) algorithms across various benchmark fitness functions.
-
-static website hosting: http://de-website-frontend-deploy.s3-website-us-east-1.amazonaws.com/
+A React single-page application to configure, run, and visualize the performance of Differential
+Evolution (DE) algorithm variants across benchmark fitness functions.
 
 ## Features
-**This is a project still under development**
--This is a Single Page Application developed using MERN stack.
--This project features 4 main functionalities 
-1. Data visualization - user able to visualize performance of DE models toward benchmark function in charts(line/bar)
-2. DE Model simulation - user able to simulate DE models by giving parameters (cloud computing by AWS EC2) 
-3. Author(me) portfolio - A student portfolio page to appreciate my mentor/supervisor Ts Dr. Lim Seng Poh for his unwavering support 
-4. Profile Management - Page for user to manage and modify their profile
+
+1. **Simulation** — configure and submit DE runs (benchmark functions × mutation schemes ×
+   crossover operators × selection methods) for cloud computation on AWS EC2, with live progress.
+2. **Data visualization** — compare model performance against benchmark functions in charts
+   (line/bar) and browse simulation history/results.
+3. **Data import** — upload existing result data via a `.txt` format instead of running a live
+   simulation.
+4. **Profile & account management** — view/update profile, change password, upload an avatar.
+5. **Admin oversight** (admin role only) — user management, queue status, all simulations.
+6. **Author portfolio page** — a page for the project author.
 
 ## DE Models Compared
-The dashboard compares total 80 different Differential Evolution models by combining 10 mutation schemes, 4 crossover operators and 2 selection methods 
+
+The dashboard compares up to 80 different Differential Evolution models by combining 10 mutation
+schemes, 4 crossover operators, and 2 selection methods, across 10 benchmark fitness functions.
 
 ## Installation
 
-1. **Clone the repository**:
+1. **Clone the repository** and install dependencies:
 
    ```bash
-   git clone https://github.com/ogc-edu/DE-website-frontend
-   cd de-research-dashboard
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
+   git clone <this-repo-url>
+   cd DE-dashboard-frontend
    npm install
    ```
+
+2. **Configure the backend URL** — copy `.env.example` to `.env` and set `REACT_APP_API_URL`
+   (or the `REACT_APP_BACKEND_PROTOCOL`/`_HOST`/`_PORT` pieces), pointing at a running instance of
+   the [`DE-website-backend`](../DE-website-backend) API. Every page except login/register needs
+   the backend running to do anything useful.
 
 3. **Start the development server**:
 
    ```bash
-   npm start
+   npm start   # http://localhost:3001
    ```
 
 ## Technologies Used
 
-- **React** - Frontend framework
-- **Chart.js** - Data visualization library
-- **Tailwind CSS** - Responsive layout system
-- **Node.js** - Backend logic
-- **AWS Services** - Cloud computing for simulation
-- **MongoDB** - NoSQL storage for simplicity and large data storage
+- **React** (Create React App) — frontend framework
+- **React Router** — client-side routing
+- **Chart.js** — data visualization
+- **Tailwind CSS + shadcn/ui (Radix)** — styling and UI primitives
+- **axios** — HTTP client
+- **AWS** — the backend/worker this app talks to run on AWS (SQS, DynamoDB, S3, EC2)
 
+See `CLAUDE.md` and `docs/ARCHITECTURE.md` for the full architecture, routing conventions, and
+state-management details.
