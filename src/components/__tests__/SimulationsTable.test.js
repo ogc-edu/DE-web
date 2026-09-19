@@ -1,6 +1,13 @@
 import React from "react";
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import SimulationsTable from "../SimulationsTable";
+import { simulationService } from "../../services/api";
+
+jest.mock("../../services/api", () => ({
+  simulationService: {
+    getResults: jest.fn(),
+  },
+}));
 
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
@@ -135,10 +142,114 @@ describe("SimulationsTable", () => {
     expect(onDelete).toHaveBeenCalledWith("sim-1");
   });
 
-  test("CSV export is disabled for a simulation with no rows", () => {
-    render(<SimulationsTable simulations={[sim({ simulationData: [] })]} />);
+  test("lazily fetches result rows before exporting CSV when the list record has none", async () => {
+    simulationService.getResults.mockResolvedValue({
+      data: {
+        simulationId: "sim-1",
+        simulationData: [
+          {
+            functionId: 1,
+            mutationId: 1,
+            crossoverId: 1,
+            selectionId: 1,
+            lowestFitness: 1e-9,
+          },
+        ],
+      },
+    });
 
-    expect(screen.getByTitle("Download CSV")).toBeDisabled();
+    let blobParts = null;
+    const blobSpy = jest
+      .spyOn(global, "Blob")
+      .mockImplementation((parts, options) => {
+        blobParts = parts;
+        return { type: options?.type };
+      });
+    const createObjectURL = jest.fn(() => "blob:csv");
+    const revokeObjectURL = jest.fn();
+    global.URL.createObjectURL = createObjectURL;
+    global.URL.revokeObjectURL = revokeObjectURL;
+    const clickSpy = jest
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(<SimulationsTable simulations={[sim({ simulationData: [] })]} />);
+    const button = screen.getByTitle("Download CSV");
+    // No rows in the list payload, but the button stays usable.
+    expect(button).not.toBeDisabled();
+    expect(simulationService.getResults).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    expect(simulationService.getResults).toHaveBeenCalledWith("sim-1");
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(blobParts.join("\n")).toContain(
+      "functionId,mutationId,crossoverId,selectionId,lowestFitness"
+    );
+    expect(blobParts.join("\n")).toContain("1,1,1,1,1e-9");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    blobSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
+
+  test("exports existing rows without hitting the results endpoint", async () => {
+    const blobSpy = jest
+      .spyOn(global, "Blob")
+      .mockImplementation(() => ({}));
+    global.URL.createObjectURL = jest.fn(() => "blob:csv");
+    global.URL.revokeObjectURL = jest.fn();
+    const clickSpy = jest
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(
+      <SimulationsTable
+        simulations={[
+          sim({
+            simulationData: [
+              {
+                functionId: 2,
+                mutationId: 1,
+                crossoverId: 1,
+                selectionId: 1,
+                lowestFitness: 3e-7,
+              },
+            ],
+          }),
+        ]}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle("Download CSV"));
+    });
+
+    expect(simulationService.getResults).not.toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    blobSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
+
+  test("a failed lazy CSV fetch surfaces an error and keeps the button usable", async () => {
+    simulationService.getResults.mockRejectedValue({
+      response: { data: { error: "Results unavailable" } },
+    });
+
+    render(<SimulationsTable simulations={[sim({ simulationData: [] })]} />);
+    const button = screen.getByTitle("Download CSV");
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    expect(screen.getByText("Failed to download CSV")).toBeInTheDocument();
+    expect(screen.getByText("Results unavailable")).toBeInTheDocument();
+    // Retry remains possible.
+    expect(button).not.toBeDisabled();
   });
 
   test("in-flight simulations show their progress", () => {

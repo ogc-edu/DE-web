@@ -2,31 +2,53 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import CrossoverNavigation from "../CrossoverNavigation";
 
+const quick = (crossover = "exponential") => ({
+  mode: "quick",
+  crossovers: [crossover],
+  selections: ["sts", "greedy"],
+  mutations: [],
+  topN: null,
+});
+
 describe("CrossoverNavigation", () => {
-  test("offers every crossover operator plus an all-methods option", () => {
+  test("offers every crossover operator plus the custom escape hatch", () => {
     render(
       <CrossoverNavigation
-        activeCrossover="exponential"
-        onCrossoverChange={jest.fn()}
+        selection={quick()}
+        onSelectCrossover={jest.fn()}
+        onOpenCustom={jest.fn()}
       />
     );
 
     for (const label of [
-      "All Methods",
       "Exponential",
       "Binomial",
       "One-Point",
       "Two-Point",
+      "Custom…",
     ]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
   });
 
+  test("no longer offers the broken all-methods option", () => {
+    render(
+      <CrossoverNavigation
+        selection={quick()}
+        onSelectCrossover={jest.fn()}
+        onOpenCustom={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByText("All Methods")).not.toBeInTheDocument();
+  });
+
   test("highlights the active operator", () => {
     render(
       <CrossoverNavigation
-        activeCrossover="binomial"
-        onCrossoverChange={jest.fn()}
+        selection={quick("binomial")}
+        onSelectCrossover={jest.fn()}
+        onOpenCustom={jest.fn()}
       />
     );
 
@@ -39,17 +61,56 @@ describe("CrossoverNavigation", () => {
   });
 
   test("reports the selected operator by its data key", () => {
-    const onCrossoverChange = jest.fn();
+    const onSelectCrossover = jest.fn();
     render(
       <CrossoverNavigation
-        activeCrossover="exponential"
-        onCrossoverChange={onCrossoverChange}
+        selection={quick()}
+        onSelectCrossover={onSelectCrossover}
+        onOpenCustom={jest.fn()}
       />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "One-Point" }));
 
     // The key must match fitnessData's, not the display label.
-    expect(onCrossoverChange).toHaveBeenCalledWith("onepoint");
+    expect(onSelectCrossover).toHaveBeenCalledWith("onepoint");
+  });
+
+  test("in custom mode no operator is active and the button summarises the series", () => {
+    const selection = {
+      mode: "custom",
+      crossovers: ["exponential", "binomial", "onepoint"],
+      selections: ["sts", "greedy"],
+      mutations: [],
+      topN: null,
+    };
+
+    render(
+      <CrossoverNavigation
+        selection={selection}
+        onSelectCrossover={jest.fn()}
+        onOpenCustom={jest.fn()}
+      />
+    );
+
+    const custom = screen.getByRole("button", { name: "Custom (6 series)" });
+    expect(custom.className).toContain("bg-accent-600");
+    expect(
+      screen.getByRole("button", { name: "Exponential" }).className
+    ).not.toContain("bg-accent-600");
+  });
+
+  test("the custom button opens the dialog", () => {
+    const onOpenCustom = jest.fn();
+    render(
+      <CrossoverNavigation
+        selection={quick()}
+        onSelectCrossover={jest.fn()}
+        onOpenCustom={onOpenCustom}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Custom…" }));
+    expect(onOpenCustom).toHaveBeenCalledTimes(1);
   });
 });

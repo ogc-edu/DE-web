@@ -14,6 +14,17 @@ const Dialog = ({ open, onOpenChange, children }) => {
     };
   }, [open]);
 
+  // No Radix here, so Escape is wired by hand. Listening on document means it
+  // works wherever focus sits inside the dialog.
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onOpenChange?.(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onOpenChange]);
+
   if (!open) return null;
 
   return (

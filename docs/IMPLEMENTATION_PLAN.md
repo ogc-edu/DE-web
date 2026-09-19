@@ -7,7 +7,7 @@
 
 ## Health baseline (verified)
 
-- `npm test` → **147/147 pass** (24 suites, after Feature 004 — all four features complete)
+- `npm test` → **173/173 pass** (26 suites, after the DynamoDB migration Step 9 — CSV lazy-fetch)
 - `npm run build` → **passes.** The earlier failure (`Cannot find module
   'language-subtag-registry/data/json/registry.json'`) was an incomplete `node_modules`
   and was cleared by `npm ci` — it was never a code defect.

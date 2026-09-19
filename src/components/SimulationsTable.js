@@ -43,6 +43,8 @@ import {
 } from "./ui/dialog";
 import { cn } from "../lib/utils";
 import { formatFitness } from "../data/variantMappings";
+import { DUMMY_SIMULATION_ID } from "../data/dummySimulation";
+import { simulationService } from "../services/api";
 
 const statusConfig = {
   completed: {
@@ -149,6 +151,8 @@ export default function SimulationsTable({
   showStatusFilter = false,
   emptyTitle = "No simulations yet",
   emptyDescription = "Run a DE experiment or import a .txt results file to get started.",
+  isDummySimulation = (sim) => sim?.id === DUMMY_SIMULATION_ID,
+  onRemoveDummy,
   className,
 }) {
   const navigate = useNavigate();
@@ -161,6 +165,8 @@ export default function SimulationsTable({
   });
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [exportingId, setExportingId] = useState(null);
+  const [exportError, setExportError] = useState(null);
 
   const benchmarkOptions = useMemo(() => {
     const set = new Set();
@@ -230,8 +236,49 @@ export default function SimulationsTable({
     showStatusFilter,
   ]);
 
+  // The list endpoint no longer ships result rows (they live in a separate
+  // `simulation_results` table). Fetch them lazily on demand so the CSV button
+  // stays usable for list records that only carry the denormalized bestFitness.
+  const handleExportCsv = async (sim) => {
+    setExportError(null);
+    const hasRows =
+      Array.isArray(sim.simulationData) && sim.simulationData.length > 0;
+    let record = sim;
+    if (!hasRows) {
+      setExportingId(sim.id);
+      try {
+        const { data } = await simulationService.getResults(sim.id);
+        record = {
+          ...sim,
+          simulationData: Array.isArray(data?.simulationData)
+            ? data.simulationData
+            : [],
+        };
+      } catch (err) {
+        console.error(`Error fetching results for ${sim.id}:`, err);
+        setExportError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            err.message ||
+            "Failed to download results"
+        );
+        return;
+      } finally {
+        setExportingId(null);
+      }
+    }
+    exportSimulationCsv(record);
+  };
+
   const confirmDelete = async () => {
     if (!pendingDelete || !onDelete) return;
+    // The dummy demo run is client-side only — remove it locally and never
+    // hit the API (the backend would 404/400 on an unknown id).
+    if (isDummySimulation(pendingDelete)) {
+      setPendingDelete(null);
+      onRemoveDummy?.();
+      return;
+    }
     setDeleting(true);
     try {
       await onDelete(pendingDelete.id);
@@ -254,6 +301,18 @@ export default function SimulationsTable({
               Failed to load simulations
             </p>
             <p className="text-sm text-red-600">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {exportError && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">
+              Failed to download CSV
+            </p>
+            <p className="text-sm text-red-600">{exportError}</p>
           </div>
         </div>
       )}
@@ -361,6 +420,14 @@ export default function SimulationsTable({
                       <span className="font-semibold text-primary-900">
                         {sim.modelSummary || sim.model || "N/A"}
                       </span>
+                      {isDummySimulation(sim) && (
+                        <span
+                          title="Locally generated demo data — not stored on the server"
+                          className="ml-2 align-middle inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-purple-50 text-purple-600 border border-purple-200"
+                        >
+                          Demo
+                        </span>
+                      )}
                       <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
                         NP:{sim.np ?? "N/A"} F:{sim.f ?? "N/A"} Cr:
                         {sim.cr ?? "N/A"}
@@ -425,13 +492,14 @@ export default function SimulationsTable({
                           size="icon"
                           className="h-8 w-8 hover:bg-accent-50 text-muted-foreground hover:text-accent-600"
                           title="Download CSV"
-                          disabled={
-                            !Array.isArray(sim.simulationData) ||
-                            sim.simulationData.length === 0
-                          }
-                          onClick={() => exportSimulationCsv(sim)}
+                          disabled={exportingId === sim.id}
+                          onClick={() => handleExportCsv(sim)}
                         >
-                          <Download className="h-4 w-4" />
+                          {exportingId === sim.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                         </Button>
                         {onDelete && (
                           <Button
